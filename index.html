@@ -468,10 +468,11 @@ button.sub-btn:active{transform:translateY(1px)}
         <li>練習ランは、ペースから求めた酸素摂取量と「心拍予備率(平均心拍が安静時〜最大のどこにあるか)」から最大酸素摂取量(VDOT)を推定します。全力走はタイムから直接VDOTを算出します(ジャック・ダニエルズ式)。</li>
         <li>気温・湿度・天候・起伏の影響を差し引き、「好条件で走った場合」のペースに換算してから計算します。暑い日の練習でも正当に評価されます。</li>
         <li>直近60日の記録を、新しいほど・距離が長いほど重く扱って平均します(予想欄の「練習データ(〇本)」はその本数)。</li>
+        <li>記録一覧とグラフには、そのランを記録した時点のフルマラソン予想タイム(当日条件・補正・過去レースを含む)を保存して表示します。</li>
         <li>ランの最大心拍を入れると、①基礎情報の最大心拍より高い値が記録された場合はそちらを最大心拍として使い、②平均と最大の差が25拍を超える日(変化走・坂など心拍が大きく振れた日)は信頼度を下げて扱います。</li>
         <li>VO2max(時計などの値)は高めに出やすいため、練習記録が1〜2本のときは2割、3本以上では1割の重みで組み合わせます。練習記録がないときはVO2maxだけで試算します。</li>
         <li>走り込み補正:月間走行距離が100km未満で+8%、100〜150kmで+5%、150〜200kmで+3%、200km以上で±0。直近6週間の最長距離による補正(最大4%)と合わせ、大きい方+小さい方の半分(上限10%)を上乗せします。</li>
-        <li>過去のフルマラソンレース結果は、新しいレースほど重く平均した「過去レース」のタイムとして、計算結果と組み合わせます。直近1年以内のレースがあれば5割、それより古いだけなら3割(練習記録がないときは7割)の重みです。レースの最大心拍は、最大心拍の更新にも使います。</li>
+        <li>過去のフルマラソンレース結果は、大会当日の気温・湿度・天候(レース中の時間帯の平均)で好条件のタイムに換算してから、新しいレースほど重く平均した「過去レース」のタイムとして、計算結果と組み合わせます。直近1年以内のレースがあれば5割、それより古いだけなら3割(練習記録がないときは7割)の重みです。レースの最大心拍は、最大心拍の更新にも使います。</li>
                 <li>最後にレース当日の気温・湿度・天候を反映します。</li>
         <li>天候の自動判定:1時間あたり降水1mm以上または雨の天気コードで「雨」、0.2mm以上や霧雨で「小雨」、最大風速7m/s以上で「強風」。取得後に手で直すこともできます。</li>
       </ul>
@@ -523,8 +524,18 @@ button.sub-btn:active{transform:translateY(1px)}
     return {vdot:3.5+(vo2(v)-3.5)/Math.min(pct,1),cond,how:`心拍予備率 ${Math.round(pct*100)}%`};
   }
 
-  function aggregate(runs,s){
-    const now=Date.now(), recent=runs.filter(r=>(now-new Date(r.date))/864e5<=60);
+  // 記録時点のフルマラソン予想タイム(その日までの記録・現在の設定で計算)
+  function todayStr(){const d=new Date();return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;}
+  function snapshotFor(r){
+    const end=r.date===todayStr()?Date.now():new Date(r.date+"T23:59:59").getTime();
+    const upto=state.runs.filter(x=>x.date<=r.date);
+    const a=aggregate(upto,state.settings,end);
+    return a?{predMin:a.min,predVdot:a.vdot}:{predMin:null,predVdot:null};
+  }
+  // 過去レースの気象条件による補正(%):暑さ・湿度・天候。気象データが無ければ0
+  function raceCond(rc){return rc.temp==null?0:heatPct(rc.temp,rc.hum)+wPct(rc.weather);}
+  function aggregate(runs,s,nowTs){
+    const now=nowTs||Date.now(), recent=runs.filter(r=>{const dd=(now-new Date(r.date))/864e5;return dd<=60&&dd>=-1;});
     let sw=0,sv=0,n=0;
     for(const r of recent){const e=evalRun(r,s);if(!e.vdot)continue;
       const days=Math.max(0,(now-new Date(r.date))/864e5);
@@ -544,8 +555,8 @@ button.sub-btn:active{transform:translateY(1px)}
     let ideal=marathonMin(vdot)*(1+pen/100);
     // 過去のフルマラソンレース結果:新しいレースほど重く(約10か月で重みが1/e)平均し、計算結果と組み合わせる
     let past=null,wP=0,latestDays=null;
-    {let sw2=0,st=0;for(const rc of (state.races||[])){if(!(rc.sec>0))continue;const dd=Math.max(0,(now-new Date(rc.date))/864e5);
-      const ww=Math.exp(-dd/300);sw2+=ww;st+=ww*rc.sec/60;latestDays=latestDays==null?dd:Math.min(latestDays,dd);}
+    {let sw2=0,st=0;for(const rc of (state.races||[])){if(!(rc.sec>0))continue;const dd0=(now-new Date(rc.date))/864e5;if(dd0<0)continue;const dd=dd0;
+      const ww=Math.exp(-dd/300);sw2+=ww;const rcf=raceCond(rc);st+=ww*(rc.sec/60)/(1+rcf/100);latestDays=latestDays==null?dd:Math.min(latestDays,dd);}
      if(sw2>0){past=st/sw2;wP=!vRuns?0.7:(latestDays<=365?0.5:0.3);}}
     if(past)ideal=ideal*(1-wP)+past*wP;
     const t=ideal*(1+race/100);
@@ -583,9 +594,9 @@ button.sub-btn:active{transform:translateY(1px)}
   function save(){
     try{localStorage.setItem(LS,JSON.stringify(state));}catch(e){}
   }
-  const DEFAULT_RACES=[{id:"r20260222",name:"大阪マラソン2026",date:"2026-02-22",sec:3*3600+27*60+5,hr:169,hrMax:180},{id:"r20250216",name:"京都マラソン2025",date:"2025-02-16",sec:3*3600+38*60+20,hr:166,hrMax:177}];
+  const DEFAULT_RACES=[{id:"r20260222",name:"大阪マラソン2026",date:"2026-02-22",sec:3*3600+27*60+5,hr:169,hrMax:180,start:555,lat:34.6873,lng:135.5259},{id:"r20250216",name:"京都マラソン2025",date:"2025-02-16",sec:3*3600+38*60+20,hr:166,hrMax:177,start:540,lat:35.0116,lng:135.7681}];
   state.races=DEFAULT_RACES.map(r=>({...r}));
-  const local=loadLocal(); if(local){state.runs=local.runs||[];if(Array.isArray(local.races)){state.races=local.races;const NM={"2026-02-22":["大阪マラソン","大阪マラソン2026"],"2025-02-16":["京都マラソン","京都マラソン2025"]};state.races.forEach(r=>{const m=NM[r.date];if(m&&(!r.name||r.name===m[0]))r.name=m[1];});}Object.assign(state.settings,local.settings||{});if(!state.settings.loc)state.settings.loc={...HOME};const DS={age:47,rest:60,max:181};for(const k in DS)if(state.settings[k]==null)state.settings[k]=DS[k];if(state.settings.vo2===undefined)state.settings.vo2=53;if(!local.settings||local.settings.monthlyDefV!==1)Object.assign(state.settings,{monthly:90,monthlyDefV:1});if(!local.settings||local.settings.raceDefV!==2)Object.assign(state.settings,{raceTemp:5,raceHum:66,raceWeather:"cloudy",raceDefV:2});}
+  const local=loadLocal(); if(local){state.runs=local.runs||[];if(Array.isArray(local.races)){state.races=local.races;const NM={"2026-02-22":["大阪マラソン","大阪マラソン2026"],"2025-02-16":["京都マラソン","京都マラソン2025"]};state.races.forEach(r=>{const m=NM[r.date];if(m&&(!r.name||r.name===m[0]))r.name=m[1];const d0=DEFAULT_RACES.find(x=>x.date===r.date);if(d0){for(const k of ["start","lat","lng"])if(r[k]==null)r[k]=d0[k];}});}Object.assign(state.settings,local.settings||{});if(!state.settings.loc)state.settings.loc={...HOME};const DS={age:47,rest:60,max:181};for(const k in DS)if(state.settings[k]==null)state.settings[k]=DS[k];if(state.settings.vo2===undefined)state.settings.vo2=53;if(!local.settings||local.settings.monthlyDefV!==1)Object.assign(state.settings,{monthly:90,monthlyDefV:1});if(!local.settings||local.settings.raceDefV!==2)Object.assign(state.settings,{raceTemp:5,raceHum:66,raceWeather:"cloudy",raceDefV:2});}
 
   /* ---------- UI ---------- */
   function syncSettingsUI(){
@@ -640,7 +651,7 @@ button.sub-btn:active{transform:translateY(1px)}
     if(!r.race&&!r.hr){err.textContent="練習ランは平均心拍が必要です。全力走ならチェックを入れてください。";return;}
     if(r.hrMax&&r.hr&&r.hrMax<r.hr){err.textContent="最大心拍が平均心拍より低くなっています。";return;}
     err.textContent="";
-    state.runs.push(r);state.runs.sort((a,b)=>a.date<b.date?-1:1);save();
+    state.runs.push(r);state.runs.sort((a,b)=>a.date<b.date?-1:1);Object.assign(r,snapshotFor(r));save();
     ["fTemp","fHum"].forEach(id=>$(id).value="");resetWx();applyDefaults();
     render();
     try{$("predSec").scrollIntoView({behavior:window.matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth",block:"start"});}catch(_){}
@@ -672,10 +683,10 @@ button.sub-btn:active{transform:translateY(1px)}
     else ul.innerHTML=[...state.runs].sort((a,b)=>(b.date+(b.start||"").padStart(5,"0")).localeCompare(a.date+(a.start||"").padStart(5,"0"))).map(r=>{
       const e=evalRun(r,s), w=WEATHER.find(x=>x[0]===r.weather);
       const cond=[r.temp!=null?`${r.temp}℃`:null,r.hum!=null?`湿度${r.hum}%`:null,w?w[1]:null,r.course?(r.course>2?"坂多め":"起伏あり"):null,r.hr?`心拍${r.hr}${r.hrMax?`/最大${r.hrMax}`:""}`:null,r.race?"全力走":null].filter(Boolean).join("、");
-      return `<li class="${e.vdot?"":"bad"}">
+      return `<li class="${e.vdot||r.predMin?"":"bad"}">
         <div><div class="top">${fmtDate(r.date)}${r.start?` <span class="num">${esc(r.start)}</span>`:""} <span class="num">${r.dist}km</span> <span class="num">${hms(r.sec)}</span>(<span class="num">${ms(r.sec/r.dist)}</span>/km)</div>
         <div class="cond">${esc(cond)}${e.cond>0.05?` 条件補正 +${e.cond.toFixed(1)}%`:""}</div></div>
-        <div class="pred">${e.vdot?`<span class="num">${hms(marathonMin(e.vdot)*60)}</span><small>VDOT ${e.vdot.toFixed(1)}</small>`:`<span class="num">—</span><small>${esc(e.why)}</small>`}</div>
+        <div class="pred">${r.predMin?`<span class="num">${hms(r.predMin*60)}</span><small>VDOT ${(r.predVdot||0).toFixed(1)}</small>`:e.vdot?`<span class="num">${hms(marathonMin(e.vdot)*60)}</span><small>VDOT ${e.vdot.toFixed(1)}</small>`:`<span class="num">—</span><small>${esc(e.why)}</small>`}</div>
         <button class="del" data-id="${r.id}" aria-label="${esc(r.date)}の記録を削除">削除</button></li>`;
     }).join("");
     ul.querySelectorAll(".del").forEach(b=>b.addEventListener("click",()=>{
@@ -699,7 +710,7 @@ button.sub-btn:active{transform:translateY(1px)}
     if(!rs.length){ul.innerHTML='<li class="empty" style="display:block">レース結果がありません。</li>';return;}
     ul.innerHTML=rs.map(r=>{const v=vo2(42195/(r.sec/60))/frac(r.sec/60);
       return `<li><div><div class="rname"><span class="rlogo"><svg class="medal" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 2h4l2 5-3 2z" fill="#6FA88D"/><path d="M17 2h-4l-2 5 3 2z" fill="#8EC5FF"/><circle cx="12" cy="15" r="6.5" fill="#F2C230" stroke="#C99A14" stroke-width="1.2"/><circle cx="12" cy="15" r="3.6" fill="none" stroke="#C99A14" stroke-width="1"/></svg>${raceImg(r)?`<img class="rimg" src="${raceImg(r)}" alt="" hidden onload="this.hidden=false;this.previousElementSibling.style.display='none'" onerror="this.remove()">`:""}</span>${esc(r.name||"")}</div><div class="top">${fmtDate(r.date)} <span class="num">${hms(r.sec)}</span>(<span class="num">${ms(r.sec/42.195)}</span>/km)</div>
-        <div class="cond">${r.hr?`心拍${r.hr}${r.hrMax?`/最大${r.hrMax}`:""}`:""}</div></div>
+        <div class="cond">${r.hr?`心拍${r.hr}${r.hrMax?`/最大${r.hrMax}`:""}`:""}${r.temp!=null?`、${(WEATHER.find(x=>x[0]===r.weather)||[0,""])[1]} ${r.temp}℃${r.hum!=null?` 湿度${r.hum}%`:""}${raceCond(r)>0.05?` 条件補正 +${raceCond(r).toFixed(1)}%`:""}`:r.weather?`、${(WEATHER.find(x=>x[0]===r.weather)||[0,""])[1]}(気温データなし)`:"、気象データ取得中"}</div></div>
         <div class="pred"><small>VDOT ${v.toFixed(1)}</small></div>
         <button class="del rdel" data-id="${esc(r.id)}" aria-label="${esc(r.date)}のレース結果を削除">削除</button></li>`;}).join("");
     ul.querySelectorAll(".rdel").forEach(b=>b.addEventListener("click",()=>{
@@ -708,7 +719,7 @@ button.sub-btn:active{transform:translateY(1px)}
       clearTimeout(b._t);state.races=state.races.filter(x=>String(x.id)!==b.dataset.id);save();render();}));
   }
   function drawChart(s){
-    const pts=state.runs.map(r=>({r,e:evalRun(r,s)})).filter(p=>p.e.vdot).map(p=>({d:p.r.date,t:marathonMin(p.e.vdot)}));
+    const pts=state.runs.filter(r=>r.predMin).map(r=>({d:r.date,t:r.predMin}));
     const box=$("chart");
     if(pts.length<2){box.innerHTML='<div class="empty">2回以上記録するとグラフが表示されます。</div>';return;}
     const W=640,H=240,L=58,R=14,T=14,B=30;
@@ -722,7 +733,7 @@ button.sub-btn:active{transform:translateY(1px)}
     const path=pts.map((p,i)=>`${i?"L":"M"}${X(new Date(p.d).getTime()).toFixed(1)},${Y(p.t).toFixed(1)}`).join("");
     const dots=pts.map(p=>`<circle cx="${X(new Date(p.d).getTime())}" cy="${Y(p.t)}" r="4" fill="var(--surface)" stroke="var(--course)" stroke-width="2.5"/>`).join("");
     const lab=[pts[0],pts[pts.length-1]].map((p,i)=>`<text x="${X(new Date(p.d).getTime())}" y="${H-8}" text-anchor="${i?"end":"start"}" font-size="12" fill="var(--sub)" class="num">${fmtDateText(p.d)}</text>`).join("");
-    box.innerHTML=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="ランごとの予想タイム推移。上ほど速い">${g}<path d="${path}" fill="none" stroke="var(--course)" stroke-width="2.5" stroke-dasharray="6 4"/>${dots}${lab}</svg><div class="hint">各ランを好条件に換算した予想タイム(上ほど速い)</div>`;
+    box.innerHTML=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="ランごとの予想タイム推移。上ほど速い">${g}<path d="${path}" fill="none" stroke="var(--course)" stroke-width="2.5" stroke-dasharray="6 4"/>${dots}${lab}</svg><div class="hint">記録した時点のフルマラソン予想タイム(上ほど速い)</div>`;
   }
 
 
@@ -881,7 +892,24 @@ button.sub-btn:active{transform:translateY(1px)}
     $("fHr").value=DEF.hr;$("fHrMax").value=DEF.hrMax;$("fRace").checked=false;lastEdited="pace";
     updatePreview();schedWx();
   }
+  {let ch=false;for(const r of state.runs){if(r.predMin===undefined){Object.assign(r,snapshotFor(r));ch=true;}}if(ch)save();}
   syncSettingsUI();syncLocUI();render();applyDefaults();fitSubtitles();
+  // 過去レースの気象を日付・開始時刻・場所から取得(Open-Meteo)。取得できなければ公式発表のスタート時データで代用
+  (async()=>{
+    const FALLBACK={"2026-02-22":{temp:11.3,hum:59,weather:"sunny",wxSrc:"公式発表(スタート時)"},"2025-02-16":{weather:"cloudy",wxSrc:"当日の天候のみ"}};
+    let changed=false;
+    for(const rc of (state.races||[])){
+      if(rc.lat==null||rc.wxSrc==="Open-Meteo"||(rc.temp!=null&&!rc.wxSrc))continue;   // 公式の代替値は、次回以降Open-Meteoで取れたら置き換える
+      try{
+        const hr=await fetchHourly(rc.date,{lat:rc.lat,lng:rc.lng});
+        const s=summarize(hr,rc.start||540,rc.sec/60);
+        if(s){rc.temp=s.temp;rc.hum=s.hum;rc.weather=s.weather;rc.wxSrc="Open-Meteo";changed=true;continue;}
+      }catch(_){}
+      const fb=FALLBACK[rc.date];if(fb){Object.assign(rc,fb);changed=true;}
+      rc._wxTried=true;changed=true;
+    }
+    if(changed){save();render();}
+  })();
 })();
 </script>
 </body>
