@@ -39,7 +39,14 @@ svg text.num{font-weight:700}
 .datebox:focus-within{outline:3px solid var(--course);outline-offset:2px}
 .wd{font-family:"Zen Kaku Gothic New",sans-serif;font-weight:700;font-size:.8em;margin-left:1px}
 .wrap{max-width:720px;margin:0 auto;padding:16px 16px 48px;position:relative}
-h1{font-size:18px;font-weight:700;margin:4px 0 14px;color:var(--title);border:2px solid var(--title);border-radius:0;padding:8px 12px;display:inline-block;background:transparent;position:relative}
+.hero{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:6px 0 16px}
+h1{margin:0;color:var(--title);border:2px solid var(--title);box-shadow:4px 4px 0 var(--title);background:linear-gradient(135deg,rgba(242,140,40,.16),rgba(242,140,40,.04));padding:8px 14px 14px;position:relative;line-height:1.25;flex:0 1 auto}
+h1::after{content:"";position:absolute;left:0;right:0;bottom:0;height:6px;
+  background:repeating-linear-gradient(90deg,var(--title) 0 6px,transparent 6px 12px),repeating-linear-gradient(90deg,transparent 0 6px,var(--title) 6px 12px);
+  background-size:100% 3px,100% 3px;background-position:0 0,0 3px;background-repeat:no-repeat;opacity:.85}
+h1 .kick{display:block;font-family:"Barlow Condensed","Arial Narrow",sans-serif;font-weight:700;font-size:12px;letter-spacing:.18em;opacity:.9}
+h1 .ttl{display:block;font-size:clamp(19px,5.6vw,24px);font-weight:700;letter-spacing:.04em}
+.runner{flex:none;width:clamp(72px,22vw,110px);height:auto;color:var(--title)}
 h2{font-size:17px;margin:0 0 10px}
 section{margin-top:22px}
 
@@ -116,7 +123,10 @@ input,select{padding:6px 8px;font-size:16px}
 input[type="number"],input[type="date"]{font-size:17px}
 .g6{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}
 .g4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
-.c2{grid-column:span 2}.c3{grid-column:span 3}.c6{grid-column:1/-1}
+.c2{grid-column:span 2}.c4{grid-column:span 4}
+.racechk{display:flex;align-items:flex-end;padding-bottom:6px}
+.racechk .check{line-height:1.35;align-items:center}
+.racechk .hint.rc{display:block;margin:1px 0 0}.c3{grid-column:span 3}.c6{grid-column:1/-1}
 .hint{font-size:11.5px;line-height:1.5;margin-top:4px}
 .hint.tight{margin-top:-4px}
 .tsel{display:flex;align-items:center;gap:2px}
@@ -143,11 +153,46 @@ input,select,.datebox{min-height:40px}
 .clock .meta{margin-top:8px;gap:2px 14px}
 .clock .time{font-size:clamp(52px,15vw,88px)}
 .runs li{padding:8px 0}
+
+/* bigger digits */
+input[type="number"],input[type="date"]{font-size:21px;padding-top:4px;padding-bottom:4px}
+.datebox{font-size:20px}
+.tsel select{font-size:22px}
+.grpbox .tsel select{font-size:21px}
+input,select,.datebox{min-height:42px}
+
+.datebox{white-space:nowrap;overflow:hidden;font-size:clamp(16px,4.8vw,20px)}
+h1 .ttl{white-space:nowrap;font-size:clamp(16px,4.6vw,24px)}
+h1{padding:8px 12px 14px}
+.runner{width:clamp(58px,17vw,110px)}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <h1>フルマラソン予想タイム試算</h1>
+  <header class="hero">
+    <h1><span class="kick">FULL MARATHON · 42.195km</span><span class="ttl">フルマラソン予想タイム試算</span></h1>
+    <svg class="runner" viewBox="0 0 100 110" role="img" aria-label="右向きに走る人のイラスト">
+    <g fill="currentColor" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="61" cy="14.5" r="6.6" stroke="none"/>
+      <path d="M54.2 13 C54 6.5 58.5 3.8 62.5 4.2 C66.5 4.6 68.6 7.6 68.8 10.6 L77 12 L76.4 13.6 L67.4 13.4 Z" stroke-width="1"/>
+      <path d="M58.5 20.5 L56.5 26" stroke-width="4.6" fill="none"/>
+      <path d="M52.5 30 L43.5 40.5 L47 49" stroke-width="4.8" fill="none"/>
+      <path d="M50.5 26.5 C54.5 24.8 59 25.3 61.5 28 L59.5 41 L56.5 54.5 L47.5 54 L48.5 41 Z" stroke-width="2"/>
+      <path d="M47 52.5 L57.5 53.2 L61.5 62.5 L54 65.5 L51 61 L47.5 64.5 L44.5 61.5 Z" stroke-width="1.8"/>
+      <path d="M49 60 L42.5 77" stroke-width="8.2" fill="none"/>
+      <path d="M42.5 77 L30.5 90" stroke-width="5.2" fill="none"/>
+      <path d="M32 87.8 L26 93.8 L21.5 95.8 L24 91.6 Z" stroke-width="3.6"/>
+      <path d="M55 60 L67.5 66" stroke-width="8.6" fill="none"/>
+      <path d="M67.5 66 L62.5 83" stroke-width="5.2" fill="none"/>
+      <path d="M61.6 82.4 L62.8 87 L71 87.6 L70.6 85.3 L65.5 82.2 Z" stroke-width="3"/>
+      <path d="M58.5 30.5 L64 42.5 L71.5 37" stroke-width="4.8" fill="none"/>
+      <circle cx="72.6" cy="35.6" r="3" stroke="none"/>
+    </g>
+    <g stroke="currentColor" stroke-width="2.2" stroke-linecap="round" opacity=".5" fill="none">
+      <path d="M8 40 H30"/><path d="M4 55 H26"/><path d="M10 70 H30"/>
+    </g>
+</svg>
+  </header>
 
   <section>
     <h2>今日のランを記録</h2>
@@ -160,12 +205,7 @@ input,select,.datebox{min-height:40px}
           </div></div>
         <div class="c2"><label for="fDist">距離(km)</label><input id="fDist" type="number" inputmode="decimal" step="0.01" placeholder="10"></div>
         <div class="c2"><label for="fHr">平均心拍</label><input id="fHr" type="number" inputmode="numeric" placeholder="150"></div>
-        <div class="c2"><label for="fCourse">コース</label>
-          <select id="fCourse">
-            <option value="0">平坦</option>
-            <option value="1.5">起伏あり</option>
-            <option value="3.5">坂多め</option>
-          </select></div>
+        <div class="c2"><label for="fHrMax">最大心拍</label><input id="fHrMax" type="number" inputmode="numeric" placeholder="任意"></div>
         <div class="c3 grpbox"><label id="lTime">タイム</label>
           <div class="tsel" role="group" aria-labelledby="lTime">
             <select id="fTh" aria-label="時間"></select><i>:</i><select id="fTm" aria-label="分"></select><i>:</i><select id="fTs" aria-label="秒"></select>
@@ -180,7 +220,13 @@ input,select,.datebox{min-height:40px}
         <div class="c2"><label for="fTemp">気温(℃)</label><input id="fTemp" type="number" inputmode="decimal" step="0.5" placeholder="18"></div>
         <div class="c2"><label for="fHum">湿度(%)</label><input id="fHum" type="number" inputmode="numeric" placeholder="60"></div>
         <div class="c2"><label for="fWeather">天候</label><select id="fWeather"></select></div>
-        <div class="c6"><label class="check"><input id="fRace" type="checkbox"> 全力で走った(レース・TT)<span class="hint">心拍なしでも試算</span></label></div>
+        <div class="c2"><label for="fCourse">コース</label>
+          <select id="fCourse">
+            <option value="0">平坦</option>
+            <option value="1.5">起伏あり</option>
+            <option value="3.5">坂多め</option>
+          </select></div>
+        <div class="c4 racechk"><label class="check"><input id="fRace" type="checkbox"><span>全力で走った<span class="hint rc">レース・TT(心拍なしでも試算)</span></span></label></div>
       </div>
       <div class="preview" id="preview"></div>
       <div class="err" id="formErr"></div>
@@ -260,6 +306,7 @@ input,select,.datebox{min-height:40px}
         <li>練習ランは、ペースから求めた酸素摂取量と「心拍予備率(平均心拍が安静時〜最大のどこにあるか)」から最大酸素摂取量(VDOT)を推定します。全力走はタイムから直接VDOTを算出します(ジャック・ダニエルズ式)。</li>
         <li>気温・湿度・天候・起伏の影響を差し引き、「好条件で走った場合」のペースに換算してから計算します。暑い日の練習でも正当に評価されます。</li>
         <li>直近60日の記録を、新しいほど・距離が長いほど重く扱って平均します。</li>
+        <li>ランの最大心拍を入れると、①基礎情報の最大心拍より高い値が記録された場合はそちらを最大心拍として使い、②平均と最大の差が25拍を超える日(変化走・坂など心拍が大きく振れた日)は信頼度を下げて扱います。</li>
         <li>VO2max(時計などの値)を入れている場合は、練習データからの推定7割・VO2max 3割で組み合わせます。練習記録がないときはVO2maxだけで試算します。</li>
         <li>直近6週間の最長距離が25kmに満たない場合、後半の失速を見込んで最大4%程度タイムを上乗せします。</li>
         <li>最後にレース当日の気温・湿度・天候を反映します。</li>
@@ -290,7 +337,13 @@ input,select,.datebox{min-height:40px}
     return p;
   }
   const wPct=k=>(WEATHER.find(w=>w[0]===k)||[0,0,0])[2];
-  function maxHr(s){return s.max>0?s.max:(s.age>0?Math.round(208-0.7*s.age):null);}
+  function baseMaxHr(s){return s.max>0?s.max:(s.age>0?Math.round(208-0.7*s.age):null);}
+  function recordedMaxHr(){                                // 直近1年の記録で観測した最大心拍
+    const now=Date.now();let m=0;
+    for(const r of (state.runs||[]))if(r.hrMax>0&&(now-new Date(r.date))/864e5<=365)m=Math.max(m,r.hrMax);
+    return m;
+  }
+  function maxHr(s){const b=baseMaxHr(s);if(!b)return null;return Math.max(b,recordedMaxHr());}
 
   function evalRun(r,s){
     const dm=r.dist*1000, tmin=r.sec/60;
@@ -299,7 +352,7 @@ input,select,.datebox{min-height:40px}
     if(r.race){
       const t2=dm/v; return {vdot:vo2(v)/frac(t2),cond,how:"全力走"};
     }
-    const mx=maxHr(s), rest=s.rest>0?s.rest:null;
+    const mx0=maxHr(s), mx=mx0?Math.max(mx0,r.hrMax||0):null, rest=s.rest>0?s.rest:null;
     if(!r.hr||!mx||!rest) return {vdot:null,cond,why:!r.hr?"心拍が未入力":"基礎情報(安静時心拍など)が未入力"};
     const pct=(r.hr-rest)/(mx-rest);
     if(pct<0.5) return {vdot:null,cond,why:"心拍が低すぎて推定できません"};
@@ -312,7 +365,8 @@ input,select,.datebox{min-height:40px}
     let sw=0,sv=0,n=0;
     for(const r of recent){const e=evalRun(r,s);if(!e.vdot)continue;
       const days=Math.max(0,(now-new Date(r.date))/864e5);
-      const w=Math.exp(-days/21)*Math.sqrt(Math.min(1,r.dist/15));sw+=w;sv+=w*e.vdot;n++;}
+      const vary=(!r.race&&r.hrMax&&r.hr&&r.hrMax-r.hr>25)?0.6:1;   // 変化走・坂などで心拍が大きく振れた日は重みを下げる
+      const w=Math.exp(-days/21)*Math.sqrt(Math.min(1,r.dist/15))*vary;sw+=w;sv+=w*e.vdot;n++;}
     const vRuns=n?sv/sw:null, vWatch=s.vo2>0?s.vo2:null;
     if(!vRuns&&!vWatch)return null;
     const vdot=vRuns&&vWatch?vRuns*0.7+vWatch*0.3:(vRuns||vWatch);
@@ -378,13 +432,13 @@ input,select,.datebox{min-height:40px}
   ["fPm","fPs"].forEach(id=>$(id).addEventListener("change",()=>{lastEdited="pace";const d=+$("fDist").value,p=getPace();if(d>0&&p)setTime(p*d);updatePreview();}));
   $("fDist").addEventListener("input",()=>{const d=+$("fDist").value,t=getTime(),p=getPace();
     if(d>0){if(lastEdited==="pace"&&p)setTime(p*d);else if(t)setPace(t/d);else if(p)setTime(p*d);}updatePreview();});
-  ["fHr","fTemp","fHum","fWeather","fCourse","fRace"].forEach(id=>$(id).addEventListener("input",updatePreview));
+  ["fHr","fHrMax","fTemp","fHum","fWeather","fCourse","fRace"].forEach(id=>$(id).addEventListener("input",updatePreview));
 
   function readForm(){
     const n=id=>{const v=parseFloat($(id).value);return isNaN(v)?null:v;};
     const dist=n("fDist"); let sec=getTime();
     if(!sec&&dist){const p=getPace();if(p)sec=p*dist;}
-    return {id:Date.now().toString(36),date:$("fDate").value,start:startStr(),dist,sec,hr:n("fHr"),temp:n("fTemp"),hum:n("fHum"),
+    return {id:Date.now().toString(36),date:$("fDate").value,start:startStr(),dist,sec,hr:n("fHr"),hrMax:n("fHrMax"),temp:n("fTemp"),hum:n("fHum"),
       weather:$("fWeather").value,course:+$("fCourse").value,race:$("fRace").checked};
   }
   function updatePreview(){
@@ -400,6 +454,7 @@ input,select,.datebox{min-height:40px}
     if(!(r.dist>0)){err.textContent="距離をkmで入力してください。";return;}
     if(!(r.sec>0)){err.textContent="タイムかペースを選んでください。";return;}
     if(!r.race&&!r.hr){err.textContent="練習ランは平均心拍が必要です。全力走ならチェックを入れてください。";return;}
+    if(r.hrMax&&r.hr&&r.hrMax<r.hr){err.textContent="最大心拍が平均心拍より低くなっています。";return;}
     err.textContent="";
     state.runs.push(r);state.runs.sort((a,b)=>a.date<b.date?-1:1);save();
     ["fTemp","fHum"].forEach(id=>$(id).value="");resetWx();applyDefaults();
@@ -410,7 +465,7 @@ input,select,.datebox{min-height:40px}
 
   function render(){
     const s=state.settings, mx=maxHr(s);
-    $("maxHint").textContent=!s.max&&s.age?`(現在 推定${mx})`:"";
+    {const b=baseMaxHr(s),rm=recordedMaxHr();$("maxHint").textContent=b&&rm>b?`(記録上の最大心拍 ${rm} を使用中)`:(!s.max&&s.age?`(現在 推定${b})`:"");}
     const agg=aggregate(state.runs,s);
     if(agg){
       $("bigTime").textContent=hms(agg.min*60);
@@ -431,7 +486,7 @@ input,select,.datebox{min-height:40px}
     if(!state.runs.length){ul.innerHTML='<li class="empty" style="display:block">まだ記録がありません。上のフォームから今日のランを追加してください。</li>';}
     else ul.innerHTML=[...state.runs].reverse().map(r=>{
       const e=evalRun(r,s), w=WEATHER.find(x=>x[0]===r.weather);
-      const cond=[r.temp!=null?`${r.temp}℃`:null,r.hum!=null?`湿度${r.hum}%`:null,w?w[1]:null,r.course?(r.course>2?"坂多め":"起伏あり"):null,r.hr?`心拍${r.hr}`:null,r.race?"全力走":null].filter(Boolean).join("、");
+      const cond=[r.temp!=null?`${r.temp}℃`:null,r.hum!=null?`湿度${r.hum}%`:null,w?w[1]:null,r.course?(r.course>2?"坂多め":"起伏あり"):null,r.hr?`心拍${r.hr}${r.hrMax?`/最大${r.hrMax}`:""}`:null,r.race?"全力走":null].filter(Boolean).join("、");
       return `<li class="${e.vdot?"":"bad"}">
         <div><div class="top">${fmtDate(r.date)}${r.start?` <span class="num">${esc(r.start)}</span>`:""} <span class="num">${r.dist}km</span> <span class="num">${hms(r.sec)}</span>(<span class="num">${ms(r.sec/r.dist)}</span>/km)</div>
         <div class="cond">${esc(cond)}${e.cond>0.05?` 条件補正 +${e.cond.toFixed(1)}%`:""}</div></div>
@@ -588,11 +643,11 @@ input,select,.datebox{min-height:40px}
   // init
   const today=new Date();$("fDate").value=`${today.getFullYear()}-${pad(today.getMonth()+1)}-${pad(today.getDate())}`;showDateWd();
   /* ---------- form defaults ---------- */
-  const DEF={startH:17,startM:0,dist:10,paceSec:300,hr:150};
+  const DEF={startH:17,startM:0,dist:10,paceSec:290,hr:150};
   function applyDefaults(){
     $("fSh").value=DEF.startH;$("fSm").value=DEF.startM;
     $("fDist").value=DEF.dist;setPace(DEF.paceSec);setTime(DEF.paceSec*DEF.dist);
-    $("fHr").value=DEF.hr;$("fRace").checked=false;lastEdited="pace";
+    $("fHr").value=DEF.hr;$("fHrMax").value="";$("fRace").checked=false;lastEdited="pace";
     updatePreview();schedWx();
   }
   syncSettingsUI();syncLocUI();render();applyDefaults();
