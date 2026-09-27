@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>フルマラソン予想タイム(天気自動取得版)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F5F7FA; --surface:#FFFFFF; --ink:#1C2A44; --sub:#5B6575; --line:#D9DEE6;
+  --course:#2E6BD6; --course-soft:#E4EDFB; --flag:#F2C230; --warn:#B4441F;
+  --clock-bg:#165E83; --clock-fg:#F2C230; --title:#D2640A;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#10161F; --surface:#18212D; --ink:#E6EBF2; --sub:#9AA5B5; --line:#2C3746;
+    --course:#6B9DF0; --course-soft:#1D2B42; --flag:#F2C230; --warn:#F08A63;
+    --clock-bg:#165E83; --clock-fg:#F2C230; --title:#F28C28;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#10161F; --surface:#18212D; --ink:#E6EBF2; --sub:#9AA5B5; --line:#2C3746;
+  --course:#6B9DF0; --course-soft:#1D2B42; --flag:#F2C230; --warn:#F08A63;
+  --clock-bg:#165E83; --clock-fg:#F2C230; --title:#F28C28;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Zen Kaku Gothic New","Hiragino Sans","Yu Gothic",sans-serif;font-size:15px;line-height:1.7}
+.num{font-family:"Barlow Condensed","Arial Narrow",sans-serif;font-variant-numeric:tabular-nums;font-weight:700}
+input[type="number"],input[type="date"]{font-family:"Barlow Condensed","Arial Narrow",sans-serif;font-weight:700;font-size:18px;font-variant-numeric:tabular-nums}
+.clock .meta b,.preview b,.wx b{font-weight:700}
+svg text.num{font-weight:700}
+.datebox{position:relative;border:1px solid var(--line);border-radius:8px;background:var(--bg);padding:9px 10px;font-size:18px;min-height:46px;display:flex;align-items:center}
+.datebox input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;border:0;padding:0}
+.datebox:focus-within{outline:3px solid var(--course);outline-offset:2px}
+.wd{font-family:"Zen Kaku Gothic New",sans-serif;font-weight:700;font-size:.8em;margin-left:1px}
+.wrap{max-width:720px;margin:0 auto;padding:16px 16px 48px;position:relative}
+h1{font-size:18px;font-weight:700;margin:4px 0 14px;color:var(--title);border:2px solid var(--title);border-radius:0;padding:8px 12px;display:inline-block;background:transparent;position:relative}
+h2{font-size:17px;margin:0 0 10px}
+section{margin-top:22px}
+
+.clock{background:var(--clock-bg);color:#fff;border:1px solid #0F4A69;border-radius:10px;padding:16px}
+.clock .lab{font-size:13px;color:#C7D0DD}
+.clock .time{font-family:"Barlow Condensed","Arial Narrow",sans-serif;font-weight:700;color:var(--clock-fg);font-size:clamp(56px,17vw,96px);line-height:1;letter-spacing:.02em;margin:6px 0 4px}
+.clock .range{font-size:14px;color:#E6EBF2}
+.clock .meta{display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:12px;font-size:13px;color:#C7D0DD}
+.clock .meta b{color:#fff;font-weight:500}
+.race{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,.15)}
+.race label{color:#C7D0DD;font-size:12px}
+.race input,.race select{background:rgba(255,255,255,.08);color:#fff;border-color:rgba(255,255,255,.2)}
+.race select option{color:#000}
+.racenote{grid-column:1/-1;font-size:11.5px;color:#C7D0DD}
+
+/* group boxes: deep green, with their own readable color tokens */
+.panel{
+  --surface:#1D4F3C; --bg:#143A2C; --ink:#F1F7F3; --sub:#B9D3C6; --line:#3D6F5B;
+  --course:#8EC5FF; --course-soft:#26604A; --warn:#FFB08A;
+  background:var(--surface);color:var(--ink);border:1px solid #2A6650;border-radius:10px;padding:16px}
+.panel button.primary{background:#2E6BD6;border-color:#2E6BD6}
+.panel select option{background:#143A2C;color:#F1F7F3}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.grid .full{grid-column:1/-1}
+label{display:block;font-size:13px;color:var(--sub);margin-bottom:4px}
+input,select{width:100%;font:inherit;font-size:16px;padding:9px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink)}
+input:focus-visible,select:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid var(--course);outline-offset:2px}
+.sel3{display:flex;align-items:center;gap:6px}
+.sel3 select{width:auto;flex:1;min-width:0;font-family:"Barlow Condensed","Arial Narrow",sans-serif;font-size:19px;font-weight:700;text-align:center;padding:8px 6px}
+.sel3 span{font-size:13px;color:var(--sub);flex:none}
+.hint{font-size:12px;color:var(--sub);margin-top:3px}
+.check{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--ink)}
+.check input{width:20px;height:20px}
+button{font:inherit;cursor:pointer;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:9px 14px}
+button.primary{background:var(--course);border-color:var(--course);color:#fff;font-weight:700;width:100%;padding:12px}
+.err{color:var(--warn);font-size:13px;margin-top:8px;min-height:1em}
+.preview{margin-top:10px;font-size:14px;color:var(--sub)}
+.preview b{color:var(--ink)}
+
+.chart{overflow-x:auto}
+.chart svg{display:block;width:100%;height:auto}
+.runs{list-style:none;margin:0;padding:0}
+.runs li{display:grid;grid-template-columns:1fr auto;gap:4px 12px;padding:12px 0;border-bottom:1px solid var(--line)}
+.runs li:last-child{border-bottom:0}
+.runs .top{font-weight:700}
+.runs .top .num{font-size:20px}
+.runs .cond{font-size:12.5px;color:var(--sub)}
+.runs .pred{text-align:right}
+.runs .pred .num{font-size:22px;font-weight:700;color:var(--course)}
+.runs .pred small{display:block;font-size:11.5px;color:var(--sub)}
+.runs .del{grid-column:2;justify-self:end;font-size:12px;padding:3px 10px;color:var(--sub)}
+.runs .del.armed{background:var(--warn);border-color:var(--warn);color:#fff}
+.runs .bad .pred .num{color:var(--sub)}
+.empty{color:var(--sub);font-size:14px;padding:8px 0}
+details{margin-top:4px}
+summary{cursor:pointer;font-weight:700;padding:6px 0}
+details.backup .panel{margin-top:8px}
+.method p,.method li{font-size:13.5px;color:var(--sub)}
+.method ul{padding-left:1.2em}
+.store{font-size:13px;color:var(--sub);margin:0 0 10px}
+.wx{display:flex;align-items:center;gap:10px;justify-content:space-between;background:var(--course-soft);border-radius:8px;padding:10px 12px;font-size:13px}
+.wx button{flex:none;font-size:13px;padding:6px 12px}
+.wx.ok #wxStatus{color:var(--ink)}
+.btns{display:flex;flex-wrap:wrap;gap:8px}
+@media (max-width:420px){.grid{grid-template-columns:1fr 1fr;gap:10px}.race{grid-template-columns:1fr 1fr}.race .w{grid-column:1/-1}}
+@media (prefers-reduced-motion:no-preference){.clock .time{transition:color .3s}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>フルマラソン予想タイム試算</h1>
+
+  <section>
+    <h2>今日のランを記録</h2>
+    <div class="panel">
+      <div class="grid">
+        <div><label for="fDate">日付</label><div class="datebox"><span class="num" id="fDateTxt" aria-hidden="true"></span><input id="fDate" type="date"></div></div>
+        <div><label id="lStart">走り始めた時刻</label>
+          <div class="sel3" role="group" aria-labelledby="lStart">
+            <select id="fSh" aria-label="時"></select><span>時</span>
+            <select id="fSm" aria-label="分"></select><span>分</span>
+          </div></div>
+        <div><label for="fDist">距離(km)</label><input id="fDist" type="number" inputmode="decimal" step="0.01" placeholder="10"></div>
+        <div class="full"><label id="lTime">タイム</label>
+          <div class="sel3" role="group" aria-labelledby="lTime">
+            <select id="fTh" aria-label="時間"></select><span>時間</span>
+            <select id="fTm" aria-label="分"></select><span>分</span>
+            <select id="fTs" aria-label="秒"></select><span>秒</span>
+          </div></div>
+        <div class="full"><label id="lPace">平均ペース(1kmあたり)</label>
+          <div class="sel3" role="group" aria-labelledby="lPace">
+            <select id="fPm" aria-label="分"></select><span>分</span>
+            <select id="fPs" aria-label="秒"></select><span>秒</span>
+          </div>
+          <div class="hint">タイムかペースの片方を選べば、もう一方は自動で入ります</div></div>
+        <div><label for="fHr">平均心拍(bpm)</label><input id="fHr" type="number" inputmode="numeric" placeholder="150"></div>
+        <div class="full wx" id="wxBox"><span id="wxStatus">日付と走り始めた時刻を選ぶと、<b id="wxPlace"></b>の気温・湿度・天候を自動で入れます。</span>
+          <button type="button" id="wxBtn">天気を取得</button></div>
+        <div><label for="fTemp">気温(℃)</label><input id="fTemp" type="number" inputmode="decimal" step="0.5" placeholder="18"></div>
+        <div><label for="fHum">湿度(%)</label><input id="fHum" type="number" inputmode="numeric" placeholder="60"></div>
+        <div><label for="fWeather">天候</label><select id="fWeather"></select></div>
+        <div class="full"><label for="fCourse">コース</label>
+          <select id="fCourse">
+            <option value="0">平坦</option>
+            <option value="1.5">ややアップダウン</option>
+            <option value="3.5">坂が多い</option>
+          </select></div>
+        <div class="full"><label class="check"><input id="fRace" type="checkbox"> 全力で走った(レース・タイムトライアル)</label>
+          <div class="hint">全力走は走力をそのまま反映します。普段の練習は心拍から余力を推定します。</div></div>
+      </div>
+      <div class="preview" id="preview"></div>
+      <div class="err" id="formErr"></div>
+      <button class="primary" id="addBtn">記録して試算</button>
+    </div>
+  </section>
+
+  <section id="predSec">
+    <h2>フルマラソン予想タイム</h2>
+  <div class="clock" aria-live="polite">
+    <div class="lab">42.195km 予想フィニッシュ</div>
+    <div class="time" id="bigTime">--:--:--</div>
+    <div class="range" id="bigRange">ランを記録すると試算が始まります</div>
+    <div class="meta" id="bigMeta"></div>
+    <div class="race">
+      <div><label for="raceTemp">当日の気温(℃)</label><input id="raceTemp" type="number" inputmode="decimal" step="0.5" value="5"></div>
+      <div><label for="raceHum">湿度(%)</label><input id="raceHum" type="number" inputmode="numeric" value="66"></div>
+      <div class="w"><label for="raceWeather">当日の天候</label>
+        <select id="raceWeather"></select></div>
+      <div class="racenote">初期値:びわ湖マラソン2026(3/8)公式発表の気象(スタート〜フィニッシュ時の平均)</div>
+    </div>
+  </div>
+  </section>
+
+  <section>
+    <h2>予想タイムの推移</h2>
+    <div class="panel chart" id="chart"><div class="empty">2回以上記録するとグラフが表示されます。</div></div>
+  </section>
+
+  <section>
+    <h2>記録一覧</h2>
+    <div class="panel"><ul class="runs" id="runs"></ul></div>
+  </section>
+
+  <section>
+    <h2>あなたの基礎情報</h2>
+    <div class="panel">
+      <div class="grid">
+        <div><label for="sAge">年齢</label><input id="sAge" type="number" inputmode="numeric" placeholder="50"></div>
+        <div><label for="sRest">安静時心拍</label><input id="sRest" type="number" inputmode="numeric" placeholder="60"><div class="hint">朝起きてすぐの値</div></div>
+        <div class="full"><label for="sMax">最大心拍(わかれば)</label><input id="sMax" type="number" inputmode="numeric" placeholder="空欄なら年齢から推定"><div class="hint" id="maxHint"></div></div>
+        <div class="full"><label for="sVo2">今のVO2max(時計などの値)</label><input id="sVo2" type="number" inputmode="decimal" step="0.1" placeholder="空欄なら使わない"><div class="hint">練習データからの推定と組み合わせて予想タイムに反映します。</div></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>走る場所</h2>
+    <div class="panel">
+      <div class="grid">
+        <div class="full"><label for="sLocName">地点名</label><input id="sLocName" type="text"></div>
+        <div><label for="sLat">緯度</label><input id="sLat" type="number" inputmode="decimal" step="0.0001"></div>
+        <div><label for="sLng">経度</label><input id="sLng" type="number" inputmode="decimal" step="0.0001"></div>
+        <div class="full btns"><button type="button" id="geoBtn">現在地を使う</button><button type="button" id="homeBtn">唐橋町に戻す</button></div>
+      </div>
+      <div class="hint">天気は Open-Meteo(気象庁などの観測・解析データ)から1時間ごとの値を取得し、走っていた時間帯で平均します。</div>
+    </div>
+  </section>
+
+  <section>
+    <details class="backup">
+      <summary>データの保存</summary>
+    <div class="panel">
+      <p class="store">記録はこの端末のブラウザ内に保存されます。機種変更やブラウザのデータ削除に備えて、ときどき書き出しておくと安心です。</p>
+      <div class="btns"><button type="button" id="expBtn">記録を書き出す</button><button type="button" id="impBtn">記録を読み込む</button>
+        <input type="file" id="impFile" accept=".json,application/json" hidden></div>
+      <div class="err" id="bkMsg"></div>
+    </div>
+    </details>
+  </section>
+
+  <section>
+    <details class="method">
+      <summary>試算の考え方</summary>
+      <ul>
+        <li>練習ランは、ペースから求めた酸素摂取量と「心拍予備率(平均心拍が安静時〜最大のどこにあるか)」から最大酸素摂取量(VDOT)を推定します。全力走はタイムから直接VDOTを算出します(ジャック・ダニエルズ式)。</li>
+        <li>気温・湿度・天候・起伏の影響を差し引き、「好条件で走った場合」のペースに換算してから計算します。暑い日の練習でも正当に評価されます。</li>
+        <li>直近60日の記録を、新しいほど・距離が長いほど重く扱って平均します。</li>
+        <li>VO2max(時計などの値)を入れている場合は、練習データからの推定7割・VO2max 3割で組み合わせます。練習記録がないときはVO2maxだけで試算します。</li>
+        <li>直近6週間の最長距離が25kmに満たない場合、後半の失速を見込んで最大4%程度タイムを上乗せします。</li>
+        <li>最後にレース当日の気温・湿度・天候を反映します。</li>
+        <li>天候の自動判定:1時間あたり降水1mm以上または雨の天気コードで「雨」、0.2mm以上や霧雨で「小雨」、最大風速7m/s以上で「強風」。取得後に手で直すこともできます。</li>
+      </ul>
+      <p>あくまで目安です。心拍計の精度、体調、補給、30km以降の経験によって実際のタイムは前後します。最大心拍を実測値で入れると精度が上がります。</p>
+    </details>
+  </section>
+</div>
+
+<script>
+(function(){
+  const WEATHER=[["sunny","晴れ",0],["cloudy","曇り",0],["drizzle","小雨",0.5],["rain","雨",1.5],["wind","強風",2.5],["rainwind","雨+強風",3.5]];
+  const $=id=>document.getElementById(id);
+  for(const sel of [$("fWeather"),$("raceWeather")]){
+    sel.innerHTML=WEATHER.map(w=>`<option value="${w[0]}">${w[1]}</option>`).join("");
+  }
+  $("raceWeather").value="cloudy";
+
+  /* ---------- model ---------- */
+  const vo2=v=>-4.60+0.182258*v+0.000104*v*v;                 // v: m/min
+  const frac=t=>0.8+0.1894393*Math.exp(-0.012778*t)+0.2989558*Math.exp(-0.1932605*t);
+  function marathonMin(vdot){let lo=90,hi=720;for(let i=0;i<60;i++){const m=(lo+hi)/2;if(vo2(42195/m)>vdot*frac(m))lo=m;else hi=m;}return (lo+hi)/2;}
+  function heatPct(t,h){                                          // % slower than ideal
+    if(t==null||isNaN(t))return 0;
+    let p=t<=10?Math.max(0,5-t)*0.15:0.15*(t-10)+0.012*(t-10)**2;
+    if(h!=null&&!isNaN(h)&&h>60)p+=(h-60)*0.03*(t>15?1:0.3);
+    return p;
+  }
+  const wPct=k=>(WEATHER.find(w=>w[0]===k)||[0,0,0])[2];
+  function maxHr(s){return s.max>0?s.max:(s.age>0?Math.round(208-0.7*s.age):null);}
+
+  function evalRun(r,s){
+    const dm=r.dist*1000, tmin=r.sec/60;
+    const cond=heatPct(r.temp,r.hum)+wPct(r.weather)+(+r.course||0);
+    const v=dm/tmin*(1+cond/100);                                 // normalized to ideal conditions
+    if(r.race){
+      const t2=dm/v; return {vdot:vo2(v)/frac(t2),cond,how:"全力走"};
+    }
+    const mx=maxHr(s), rest=s.rest>0?s.rest:null;
+    if(!r.hr||!mx||!rest) return {vdot:null,cond,why:!r.hr?"心拍が未入力":"基礎情報(安静時心拍など)が未入力"};
+    const pct=(r.hr-rest)/(mx-rest);
+    if(pct<0.5) return {vdot:null,cond,why:"心拍が低すぎて推定できません"};
+    if(pct>1.02) return {vdot:null,cond,why:"最大心拍を超えています"};
+    return {vdot:3.5+(vo2(v)-3.5)/Math.min(pct,1),cond,how:`心拍予備率 ${Math.round(pct*100)}%`};
+  }
+
+  function aggregate(runs,s){
+    const now=Date.now(), recent=runs.filter(r=>(now-new Date(r.date))/864e5<=60);
+    let sw=0,sv=0,n=0;
+    for(const r of recent){const e=evalRun(r,s);if(!e.vdot)continue;
+      const days=Math.max(0,(now-new Date(r.date))/864e5);
+      const w=Math.exp(-days/21)*Math.sqrt(Math.min(1,r.dist/15));sw+=w;sv+=w*e.vdot;n++;}
+    const vRuns=n?sv/sw:null, vWatch=s.vo2>0?s.vo2:null;
+    if(!vRuns&&!vWatch)return null;
+    const vdot=vRuns&&vWatch?vRuns*0.7+vWatch*0.3:(vRuns||vWatch);
+    const longest=Math.max(0,...runs.filter(r=>(now-new Date(r.date))/864e5<=42).map(r=>r.dist));
+    const endur=Math.max(0,(25-longest)/25)*4;
+    const race=heatPct(s.raceTemp,s.raceHum)+wPct(s.raceWeather);
+    const t=marathonMin(vdot)*(1+race/100)*(1+endur/100);
+    return {min:t,vdot,vRuns,vWatch,n,longest,endur,race};
+  }
+
+  /* ---------- formatting ---------- */
+  const pad=n=>String(n).padStart(2,"0");
+  function hms(sec){sec=Math.round(sec);return `${Math.floor(sec/3600)}:${pad(Math.floor(sec%3600/60))}:${pad(sec%60)}`;}
+  function ms(sec){sec=Math.round(sec);return `${Math.floor(sec/60)}:${pad(sec%60)}`;}
+  function parseClock(str){
+    if(!str)return null;const p=str.trim().replace(/[：]/g,":").split(":").map(Number);
+    if(p.some(isNaN))return null;
+    if(p.length===3)return p[0]*3600+p[1]*60+p[2];
+    if(p.length===2)return p[0]*60+p[1];
+    if(p.length===1)return p[0]*60;return null;
+  }
+  const WD="日月火水木金土";
+  function wdOf(ds){const [y,m,d]=ds.split("-").map(Number);return WD[new Date(y,m-1,d).getDay()];}
+  function fmtDateText(ds){if(!ds)return "";const [y,m,d]=ds.split("-");return `${y}/${m}/${d}（${wdOf(ds)}）`;}
+  function fmtDate(ds){if(!ds)return "";const [y,m,d]=ds.split("-");return `<span class="num">${y}/${m}/${d}</span><span class="wd">（${wdOf(ds)}）</span>`;}
+  const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+  /* ---------- state & storage ---------- */
+  const HOME={name:"滋賀県大津市唐橋町",lat:34.9906,lng:135.9072};
+  let state={runs:[],settings:{age:47,rest:60,max:181,vo2:53,raceTemp:5,raceHum:66,raceWeather:"cloudy",raceDefV:2,loc:{...HOME}}};
+    const LS="marathon-predictor-v1";
+  function loadLocal(){try{const j=localStorage.getItem(LS);if(j)return JSON.parse(j);}catch(e){}return null;}
+  function save(){
+    try{localStorage.setItem(LS,JSON.stringify(state));}catch(e){}
+  }
+  const local=loadLocal(); if(local){state.runs=local.runs||[];Object.assign(state.settings,local.settings||{});if(!state.settings.loc)state.settings.loc={...HOME};const DS={age:47,rest:60,max:181};for(const k in DS)if(state.settings[k]==null)state.settings[k]=DS[k];if(state.settings.vo2===undefined)state.settings.vo2=53;if(!local.settings||local.settings.raceDefV!==2)Object.assign(state.settings,{raceTemp:5,raceHum:66,raceWeather:"cloudy",raceDefV:2});}
+
+  /* ---------- UI ---------- */
+  function syncSettingsUI(){
+    const s=state.settings;
+    $("sAge").value=s.age??"";$("sRest").value=s.rest??"";$("sMax").value=s.max??"";$("sVo2").value=s.vo2??"";
+    $("raceTemp").value=s.raceTemp??"";$("raceHum").value=s.raceHum??"";$("raceWeather").value=s.raceWeather||"cloudy";
+  }
+  function readSettings(){
+    const n=id=>{const v=parseFloat($(id).value);return isNaN(v)?null:v;};
+    Object.assign(state.settings,{age:n("sAge"),rest:n("sRest"),max:n("sMax"),vo2:n("sVo2"),raceTemp:n("raceTemp"),raceHum:n("raceHum"),raceWeather:$("raceWeather").value});
+  }
+  ["sAge","sRest","sMax","sVo2","raceTemp","raceHum","raceWeather"].forEach(id=>$(id).addEventListener("input",()=>{readSettings();save();render();}));
+
+  // select boxes
+  const opts=(a,b,unit)=>`<option value="">--</option>`+Array.from({length:b-a+1},(_,i)=>`<option value="${a+i}">${unit?pad(a+i):a+i}</option>`).join("");
+  $("fTh").innerHTML=opts(0,6,false); $("fTm").innerHTML=opts(0,59,true); $("fTs").innerHTML=opts(0,59,true);
+  $("fPm").innerHTML=opts(2,15,false); $("fPs").innerHTML=opts(0,59,true);
+  const sv=id=>$(id).value===""?null:+$(id).value;
+  function getTime(){const h=sv("fTh"),m=sv("fTm"),s=sv("fTs");if(h==null&&m==null&&s==null)return null;const t=(h||0)*3600+(m||0)*60+(s||0);return t>0?t:null;}
+  function getPace(){const m=sv("fPm"),s=sv("fPs");if(m==null&&s==null)return null;const p=(m||0)*60+(s||0);return p>0?p:null;}
+  function setTime(t){if(t==null){["fTh","fTm","fTs"].forEach(id=>$(id).value="");return;}t=Math.round(t);
+    $("fTh").value=Math.min(6,Math.floor(t/3600));$("fTm").value=Math.floor(t%3600/60);$("fTs").value=t%60;}
+  function setPace(p){if(p==null){["fPm","fPs"].forEach(id=>$(id).value="");return;}p=Math.round(p);
+    const m=Math.floor(p/60);if(m<2||m>15)return;$("fPm").value=m;$("fPs").value=p%60;}
+  let lastEdited="time";
+  ["fTh","fTm","fTs"].forEach(id=>$(id).addEventListener("change",()=>{lastEdited="time";const d=+$("fDist").value,t=getTime();if(d>0&&t)setPace(t/d);updatePreview();}));
+  ["fPm","fPs"].forEach(id=>$(id).addEventListener("change",()=>{lastEdited="pace";const d=+$("fDist").value,p=getPace();if(d>0&&p)setTime(p*d);updatePreview();}));
+  $("fDist").addEventListener("input",()=>{const d=+$("fDist").value,t=getTime(),p=getPace();
+    if(d>0){if(lastEdited==="pace"&&p)setTime(p*d);else if(t)setPace(t/d);else if(p)setTime(p*d);}updatePreview();});
+  ["fHr","fTemp","fHum","fWeather","fCourse","fRace"].forEach(id=>$(id).addEventListener("input",updatePreview));
+
+  function readForm(){
+    const n=id=>{const v=parseFloat($(id).value);return isNaN(v)?null:v;};
+    const dist=n("fDist"); let sec=getTime();
+    if(!sec&&dist){const p=getPace();if(p)sec=p*dist;}
+    return {id:Date.now().toString(36),date:$("fDate").value,start:startStr(),dist,sec,hr:n("fHr"),temp:n("fTemp"),hum:n("fHum"),
+      weather:$("fWeather").value,course:+$("fCourse").value,race:$("fRace").checked};
+  }
+  function updatePreview(){
+    const r=readForm();
+    if(!(r.dist>0&&r.sec>0)){$("preview").innerHTML="";return;}
+    const e=evalRun(r,state.settings);
+    $("preview").innerHTML=e.vdot?`このランからの予想:<b class="num">${hms(marathonMin(e.vdot)*60)}</b>(好条件換算・当日条件は未反映)`:`このランは試算できません:${esc(e.why)}`;
+  }
+
+  $("addBtn").addEventListener("click",()=>{
+    const r=readForm(), err=$("formErr");
+    if(!r.date){err.textContent="日付を入力してください。";return;}
+    if(!(r.dist>0)){err.textContent="距離をkmで入力してください。";return;}
+    if(!(r.sec>0)){err.textContent="タイムかペースを選んでください。";return;}
+    if(!r.race&&!r.hr){err.textContent="練習ランは平均心拍が必要です。全力走ならチェックを入れてください。";return;}
+    err.textContent="";
+    state.runs.push(r);state.runs.sort((a,b)=>a.date<b.date?-1:1);save();
+    ["fTemp","fHum"].forEach(id=>$(id).value="");resetWx();applyDefaults();
+    render();
+    try{$("predSec").scrollIntoView({behavior:window.matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth",block:"start"});}catch(_){}
+    if(!state.settings.rest||!maxHr(state.settings)){err.textContent="下の「あなたの基礎情報」に年齢と安静時心拍を入れると試算できます。";}
+  });
+
+  function render(){
+    const s=state.settings, mx=maxHr(s);
+    $("maxHint").textContent=!s.max&&s.age?`推定値 ${mx} bpm を使用中`:"";
+    const agg=aggregate(state.runs,s);
+    if(agg){
+      $("bigTime").textContent=hms(agg.min*60);
+      $("bigRange").textContent=`目安 ${hms(agg.min*60*0.97)} 〜 ${hms(agg.min*60*1.04)}`;
+      const meta=[`平均ペース <b class="num">${ms(agg.min*60/42.195)}</b>/km`,`走力指標 <b class="num">${agg.vdot.toFixed(1)}</b>`,
+        agg.vRuns?`練習データ <b class="num">${agg.vRuns.toFixed(1)}</b>(直近60日 ${agg.n}本)`:`練習データ <b>なし</b>`,
+        agg.vWatch?`VO2max <b class="num">${agg.vWatch}</b>`:null].filter(Boolean);
+      if(agg.endur>0.05)meta.push(`長距離不足 <b>+${agg.endur.toFixed(1)}%</b>`);
+      if(agg.race>0.05)meta.push(`当日条件 <b>+${agg.race.toFixed(1)}%</b>`);
+      $("bigMeta").innerHTML=meta.map(m=>`<span>${m}</span>`).join("");
+    }else{
+      $("bigTime").textContent="--:--:--";
+      $("bigRange").textContent=state.runs.length?"試算できる記録がありません(基礎情報を確認してください)":"ランを記録すると試算が始まります";
+      $("bigMeta").innerHTML="";
+    }
+    // list
+    const ul=$("runs");
+    if(!state.runs.length){ul.innerHTML='<li class="empty" style="display:block">まだ記録がありません。上のフォームから今日のランを追加してください。</li>';}
+    else ul.innerHTML=[...state.runs].reverse().map(r=>{
+      const e=evalRun(r,s), w=WEATHER.find(x=>x[0]===r.weather);
+      const cond=[r.temp!=null?`${r.temp}℃`:null,r.hum!=null?`湿度${r.hum}%`:null,w?w[1]:null,r.course?(r.course>2?"坂多め":"起伏あり"):null,r.hr?`心拍${r.hr}`:null,r.race?"全力走":null].filter(Boolean).join("、");
+      return `<li class="${e.vdot?"":"bad"}">
+        <div><div class="top">${fmtDate(r.date)}${r.start?` <span class="num">${esc(r.start)}</span>`:""} <span class="num">${r.dist}km</span> <span class="num">${hms(r.sec)}</span>(<span class="num">${ms(r.sec/r.dist)}</span>/km)</div>
+        <div class="cond">${esc(cond)}${e.cond>0.05?` 条件補正 +${e.cond.toFixed(1)}%`:""}</div></div>
+        <div class="pred">${e.vdot?`<span class="num">${hms(marathonMin(e.vdot)*60)}</span><small>好条件換算・VDOT ${e.vdot.toFixed(1)}</small>`:`<span class="num">—</span><small>${esc(e.why)}</small>`}</div>
+        <button class="del" data-id="${r.id}" aria-label="${esc(r.date)}の記録を削除">削除</button></li>`;
+    }).join("");
+    ul.querySelectorAll(".del").forEach(b=>b.addEventListener("click",()=>{
+      if(b.dataset.armed!=="1"){                       // 1回目:確認状態にする(ダイアログを使わない)
+        b.dataset.armed="1";b.textContent="もう一度押すと削除";b.classList.add("armed");
+        clearTimeout(b._t);b._t=setTimeout(()=>{b.dataset.armed="";b.textContent="削除";b.classList.remove("armed");},4000);
+        return;
+      }
+      clearTimeout(b._t);
+      state.runs=state.runs.filter(x=>String(x.id)!==b.dataset.id);save();render();
+    }));
+    drawChart(s);
+  }
+
+  function drawChart(s){
+    const pts=state.runs.map(r=>({r,e:evalRun(r,s)})).filter(p=>p.e.vdot).map(p=>({d:p.r.date,t:marathonMin(p.e.vdot)}));
+    const box=$("chart");
+    if(pts.length<2){box.innerHTML='<div class="empty">2回以上記録するとグラフが表示されます。</div>';return;}
+    const W=640,H=240,L=58,R=14,T=14,B=30;
+    const xs=pts.map(p=>new Date(p.d).getTime()), x0=Math.min(...xs), x1=Math.max(...xs)||x0+1;
+    let y0=Math.min(...pts.map(p=>p.t)), y1=Math.max(...pts.map(p=>p.t));
+    const padY=Math.max(5,(y1-y0)*0.15); y0=Math.floor((y0-padY)/5)*5; y1=Math.ceil((y1+padY)/5)*5;
+    const X=v=>L+(x1===x0?0.5:(v-x0)/(x1-x0))*(W-L-R), Y=v=>T+(v-y0)/(y1-y0)*(H-T-B);   // faster = higher? keep faster on top
+    const step=(y1-y0)>60?15:(y1-y0)>30?10:5;
+    let g="";
+    for(let v=y0;v<=y1;v+=step){g+=`<line x1="${L}" x2="${W-R}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--line)"/><text x="${L-8}" y="${Y(v)+4}" text-anchor="end" font-size="12" fill="var(--sub)" class="num">${Math.floor(v/60)}:${pad(v%60)}</text>`;}
+    const path=pts.map((p,i)=>`${i?"L":"M"}${X(new Date(p.d).getTime()).toFixed(1)},${Y(p.t).toFixed(1)}`).join("");
+    const dots=pts.map(p=>`<circle cx="${X(new Date(p.d).getTime())}" cy="${Y(p.t)}" r="4" fill="var(--surface)" stroke="var(--course)" stroke-width="2.5"/>`).join("");
+    const lab=[pts[0],pts[pts.length-1]].map((p,i)=>`<text x="${X(new Date(p.d).getTime())}" y="${H-8}" text-anchor="${i?"end":"start"}" font-size="12" fill="var(--sub)" class="num">${fmtDateText(p.d)}</text>`).join("");
+    box.innerHTML=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="ランごとの予想タイム推移。上ほど速い">${g}<path d="${path}" fill="none" stroke="var(--course)" stroke-width="2.5" stroke-dasharray="6 4"/>${dots}${lab}</svg><div class="hint">各ランを好条件に換算した予想タイム(上ほど速い)</div>`;
+  }
+
+
+  /* ---------- start time ---------- */
+  $("fSh").innerHTML=`<option value="">--</option>`+Array.from({length:24},(_,i)=>`<option value="${i}">${i}</option>`).join("");
+  $("fSm").innerHTML=[0,5,10,15,20,25,30,35,40,45,50,55].map(m=>`<option value="${m}">${pad(m)}</option>`).join("");
+  function startMin(){const hh=$("fSh").value;if(hh==="")return null;return +hh*60+(+$("fSm").value||0);}
+  function startStr(){const m=startMin();return m==null?null:`${Math.floor(m/60)}:${pad(m%60)}`;}
+
+  /* ---------- location ---------- */
+  function syncLocUI(){const l=state.settings.loc;$("sLocName").value=l.name||"";$("sLat").value=l.lat;$("sLng").value=l.lng;const wp=$("wxPlace");if(wp)wp.textContent=l.name||"指定地点";}
+  ["sLocName","sLat","sLng"].forEach(id=>$(id).addEventListener("input",()=>{
+    const lat=parseFloat($("sLat").value),lng=parseFloat($("sLng").value);
+    state.settings.loc={name:$("sLocName").value.trim(),lat:isNaN(lat)?HOME.lat:lat,lng:isNaN(lng)?HOME.lng:lng};save();const wp=$("wxPlace");if(wp)wp.textContent=state.settings.loc.name||"指定地点";}));
+  $("homeBtn").onclick=()=>{state.settings.loc={...HOME};save();syncLocUI();};
+  $("geoBtn").onclick=()=>{
+    if(!navigator.geolocation){alert("この端末では現在地を取得できません。緯度・経度を直接入力してください。");return;}
+    navigator.geolocation.getCurrentPosition(p=>{state.settings.loc={name:"現在地",lat:+p.coords.latitude.toFixed(4),lng:+p.coords.longitude.toFixed(4)};save();syncLocUI();},
+      ()=>alert("現在地を取得できませんでした。位置情報の許可を確認するか、緯度・経度を直接入力してください。"),{timeout:10000});
+  };
+
+  /* ---------- weather (Open-Meteo) ---------- */
+  const RAIN2=new Set([63,65,67,73,75,77,81,82,86,95,96,99]), RAIN1=new Set([51,53,55,56,57,61,66,71,80,85]);
+  let wxSeq=0, wxTimer=null;
+  function setWxStatus(html,ok){$("wxStatus").innerHTML=html;$("wxBox").classList.toggle("ok",!!ok);}
+  function resetWx(){setWxStatus(`日付と走り始めた時刻を選ぶと、<b id="wxPlace">${esc(state.settings.loc.name||"指定地点")}</b>の気温・湿度・天候を自動で入れます。`);}
+  async function getJson(url){
+    let lastE;
+    for(let attempt=0;attempt<2;attempt++){                 // タイムアウト10秒、1回だけ再試行
+      const ac=new AbortController(), tm=setTimeout(()=>ac.abort(),10000);
+      try{
+        const r=await fetch(url,{signal:ac.signal,cache:"no-store"});
+        let body=null;try{body=await r.json();}catch(_){}
+        if(!r.ok){const e=new Error((body&&body.reason)||("HTTP "+r.status));e.kind="http";e.status=r.status;throw e;}
+        return body;
+      }catch(e){
+        if(e.kind==="http")throw e;                          // サーバーからの明確なエラーは再試行しない
+        e.kind=e.name==="AbortError"?"timeout":"blocked";lastE=e;
+        await new Promise(res=>setTimeout(res,800));
+      }finally{clearTimeout(tm);}
+    }
+    throw lastE;
+  }
+  const embedded=(()=>{try{return window.self!==window.top;}catch(_){return true;}})();
+  function wxErrorText(e){
+    if(e&&e.kind==="blocked"){
+      return embedded
+        ?"外部の天気サービスへの通信が、このアプリを表示している画面(Claudeアプリのプレビューなど)によってブロックされています。ファイルを保存し、SafariやChromeで直接開くと取得できます。"
+        :"天気サービス(Open-Meteo)に接続できませんでした。ブラウザや端末のセキュリティ設定、広告ブロッカー、社内ネットワークの制限でブロックされている可能性があります。";
+    }
+    if(e&&e.kind==="timeout")return "天気サービスの応答がありませんでした(10秒でタイムアウト)。少し待って「天気を取得」を押してください。";
+    if(e&&e.kind==="http")return `天気サービスがエラーを返しました:${esc(e.message)}`;
+    return "その日時の天気データが見つかりませんでした。手入力してください。";
+  }
+  async function fetchHourly(date,loc){
+    const q=`latitude=${loc.lat}&longitude=${loc.lng}&hourly=temperature_2m,relative_humidity_2m,weather_code,precipitation,wind_speed_10m&wind_speed_unit=ms&timezone=Asia%2FTokyo&start_date=${date}&end_date=${date}`;
+    const days=(Date.now()-new Date(date+"T00:00:00+09:00"))/864e5;
+    const fc="https://api.open-meteo.com/v1/forecast?"+q, ar="https://archive-api.open-meteo.com/v1/archive?"+q;
+    const order=days>80?[ar,fc]:[fc,ar];
+    let lastErr;
+    for(const u of order){try{const d=await getJson(u);if(d&&d.hourly&&d.hourly.time&&d.hourly.temperature_2m.some(v=>v!=null))return d.hourly;}catch(e){lastErr=e;if(e.kind==="blocked")break;}}
+    throw lastErr||new Error("データなし");
+  }
+  function summarize(hr,sMin,durMin){
+    const h0=Math.floor(sMin/60), h1=Math.min(23,Math.floor((sMin+Math.max(durMin,1)-1)/60));
+    const idx=[];hr.time.forEach((t,i)=>{const hh=+t.slice(11,13);if(hh>=h0&&hh<=h1)idx.push(i);});
+    const vals=k=>idx.map(i=>hr[k][i]).filter(v=>v!=null);
+    const avg=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:null;
+    const temp=avg(vals("temperature_2m")), hum=avg(vals("relative_humidity_2m")), pr=avg(vals("precipitation"))||0;
+    const wind=Math.max(0,...vals("wind_speed_10m")), codes=vals("weather_code");
+    if(temp==null)return null;
+    let rain=0;for(const c of codes){if(RAIN2.has(c))rain=2;else if(RAIN1.has(c))rain=Math.max(rain,1);}
+    if(pr>=1)rain=2;else if(pr>=0.2)rain=Math.max(rain,1);
+    const windy=wind>=7, clear=codes.length&&codes.filter(c=>c<=1).length>=codes.length/2;
+    const w=rain===2&&windy?"rainwind":rain===2?"rain":windy?"wind":rain===1?"drizzle":clear?"sunny":"cloudy";
+    return {temp:Math.round(temp*10)/10,hum:Math.round(hum),weather:w,wind,pr,h0,h1};
+  }
+  async function autoWeather(){
+    const date=$("fDate").value, sMin=startMin();
+    if(!date||sMin==null)return;
+    const t=getTime(); const dur=t?t/60:60;
+    const seq=++wxSeq; setWxStatus("天気を取得しています…");
+    try{
+      const hr=await fetchHourly(date,state.settings.loc); if(seq!==wxSeq)return;
+      const s=summarize(hr,sMin,dur);
+      if(!s){setWxStatus("その時間帯のデータがまだありません。手入力してください。");return;}
+      $("fTemp").value=s.temp;$("fHum").value=s.hum;$("fWeather").value=s.weather;
+      const wl=WEATHER.find(x=>x[0]===s.weather)[1];
+      setWxStatus(`${esc(state.settings.loc.name||"指定地点")} ${s.h0}〜${s.h1+1}時:<b>${s.temp}℃・湿度${s.hum}%・${wl}</b>(風 最大${s.wind.toFixed(1)}m/s)`,true);
+      updatePreview();
+    }catch(e){if(seq!==wxSeq)return;setWxStatus(wxErrorText(e)+" 気温・湿度・天候は手入力もできます。");}
+  }
+  const schedWx=()=>{clearTimeout(wxTimer);wxTimer=setTimeout(autoWeather,500);};
+  ["fDate","fSh","fSm"].forEach(id=>$(id).addEventListener("change",schedWx));
+  ["fTh","fTm","fTs","fPm","fPs"].forEach(id=>$(id).addEventListener("change",()=>{if(startMin()!=null)schedWx();}));
+  $("wxBtn").onclick=()=>{if(startMin()==null){setWxStatus("先に走り始めた時刻を選んでください。");return;}autoWeather();};
+
+  /* ---------- backup ---------- */
+  $("expBtn").onclick=()=>{
+    const blob=new Blob([JSON.stringify(state,null,1)],{type:"application/json"});
+    const a=document.createElement("a");a.href=URL.createObjectURL(blob);
+    const d=new Date();a.download=`marathon-log-${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}.json`;
+    document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+    $("bkMsg").textContent=`${state.runs.length}件を書き出しました。`;
+  };
+  $("impBtn").onclick=()=>$("impFile").click();
+  $("impFile").onchange=async e=>{
+    const f=e.target.files[0];if(!f)return;
+    try{const d=JSON.parse(await f.text());if(!Array.isArray(d.runs))throw 0;
+      const ids=new Set(state.runs.map(r=>r.id));let n=0;
+      for(const r of d.runs){if(r&&r.date&&r.dist&&r.sec&&!ids.has(r.id)){state.runs.push(r);n++;}}
+      state.runs.sort((a,b)=>a.date<b.date?-1:1);
+      if(d.settings)Object.assign(state.settings,d.settings,{loc:d.settings.loc||state.settings.loc});
+      save();syncSettingsUI();syncLocUI();render();$("bkMsg").textContent=`${n}件を読み込みました。`;
+    }catch(_){$("bkMsg").textContent="読み込めませんでした。このアプリで書き出したJSONファイルを選んでください。";}
+    e.target.value="";
+  };
+  function showDateWd(){const v=$("fDate").value;$("fDateTxt").innerHTML=v?fmtDate(v):"日付を選択";}
+  $("fDate").addEventListener("input",showDateWd);$("fDate").addEventListener("change",showDateWd);
+  // init
+  const today=new Date();$("fDate").value=`${today.getFullYear()}-${pad(today.getMonth()+1)}-${pad(today.getDate())}`;showDateWd();
+  /* ---------- form defaults ---------- */
+  const DEF={startH:17,startM:0,dist:10,paceSec:300,hr:150};
+  function applyDefaults(){
+    $("fSh").value=DEF.startH;$("fSm").value=DEF.startM;
+    $("fDist").value=DEF.dist;setPace(DEF.paceSec);setTime(DEF.paceSec*DEF.dist);
+    $("fHr").value=DEF.hr;$("fRace").checked=false;lastEdited="pace";
+    updatePreview();schedWx();
+  }
+  syncSettingsUI();syncLocUI();render();applyDefaults();
+})();
+</script>
+</body>
+</html>
