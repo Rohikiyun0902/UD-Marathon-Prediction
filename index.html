@@ -301,6 +301,21 @@ button.sub-btn:active{transform:translateY(1px)}
 /* 大会ロゴ(画像・メダル)を約1.2倍に */
 .rimg{height:31px;max-width:48px}
 .rname .medal{width:24px;height:24px}
+
+.locbtns button:disabled{opacity:.45;cursor:default}
+
+#sLat,#sLng{font-size:18px!important;padding-left:6px;padding-right:4px}
+
+.rwxbtn{display:flex;align-items:flex-end;padding-bottom:7.5px!important}
+.rwxbtn .sub-btn{height:44px;margin:0;padding:0 8px}
+
+.hint-strong{color:#F2C230;font-weight:700}
+
+.hint.oneline2{white-space:nowrap;overflow:hidden;font-size:clamp(9.5px,3vw,12px)}
+
+.locnote{margin-top:8px}
+
+.locbtns .geobtn{height:44px;padding:0 4px;font-size:12px;line-height:1.25;font-weight:700}
 </style>
 </head>
 <body>
@@ -427,9 +442,30 @@ button.sub-btn:active{transform:translateY(1px)}
 
   <section>
     <details class="backup">
-      <summary class="sh" data-en="RACES">過去のフルマラソンレース結果</summary>
+      <summary class="sh" data-en="RACES">過去レース結果</summary>
     <div class="panel">
       <ul class="runs" id="races"></ul>
+      <div class="g6 raceform">
+        <div class="c6"><label for="rName">大会名</label><input id="rName" type="text" placeholder="例:大阪マラソン2027"></div>
+        <div class="c3"><label for="rDate">日付</label><div class="datebox"><span class="num" id="rDateTxt" aria-hidden="true"></span><input id="rDate" type="date"></div></div>
+        <div class="c3 grpbox"><label id="lRT">タイム</label>
+          <div class="tsel" role="group" aria-labelledby="lRT"><select id="rTh" aria-label="時間"></select><i>:</i><select id="rTm" aria-label="分"></select><i>:</i><select id="rTs" aria-label="秒"></select></div></div>
+        <div class="c6 grpbox"><label id="lRH">心拍(bpm)</label>
+          <div class="hrpair" role="group" aria-labelledby="lRH">
+            <div><span class="sub">平均</span><select id="rHr" class="nsel" aria-label="平均心拍"></select></div>
+            <div><span class="sub">最大</span><select id="rHrMax" class="nsel" aria-label="最大心拍"></select></div>
+          </div></div>
+        <div class="c3"><label id="lRS">スタート時刻</label>
+          <div class="tsel" role="group" aria-labelledby="lRS"><select id="rSh" aria-label="時"></select><i>:</i><select id="rSm" aria-label="分"></select></div></div>
+        <div class="c3 rwxbtn"><button type="button" class="sub-btn" id="rWxBtn">天気を取得</button></div>
+        <div class="c6 hint" id="rWxMsg">大会名・日付・スタート時刻から、開催地の天候・気温・湿度を取得します。</div>
+        <div class="c2"><label for="rTemp">気温(℃)</label><select id="rTemp" class="nsel"></select></div>
+        <div class="c2"><label for="rHum">湿度(%)</label><select id="rHum" class="nsel"></select></div>
+        <div class="c2"><label for="rWeather">天候</label><select id="rWeather"></select></div>
+        <div class="c6 hint oneline2">取得できない時は、わかる範囲で選択(空欄は補正なし)。<br><b class="hint-strong">※気温は予測精度に大きく影響するため、なるべく入力を。</b></div>
+      </div>
+      <div class="err" id="raceErr"></div>
+      <button type="button" class="sub-btn" id="raceAdd">レース結果を追加</button>
     </div>
     </details>
   </section>
@@ -442,9 +478,10 @@ button.sub-btn:active{transform:translateY(1px)}
         <div class="c6"><label for="sLocName">地点名</label><input id="sLocName" type="text"></div>
         <div class="c2"><label for="sLat">緯度</label><input id="sLat" type="number" inputmode="decimal" step="0.0001"></div>
         <div class="c2"><label for="sLng">経度</label><input id="sLng" type="number" inputmode="decimal" step="0.0001"></div>
-        <div class="c2 locbtns"><button type="button" id="geoBtn">現在地</button><button type="button" id="homeBtn">唐橋町</button></div>
+        <div class="c2 locbtns"><button type="button" id="geoBtn" class="geobtn">現在地を<br>取得し記憶</button></div>
+        
       </div>
-      <div class="hint">天気は Open-Meteo(気象庁などのデータ)の1時間ごとの値を、走っていた時間帯で平均します。</div>
+      <div class="hint oneline2 locnote"><span id="geoNote"></span><br>天気はOpen-Meteo(気象庁など)の1時間ごとの値を使用。<br>走っていた時間帯の平均で、気温・湿度・天候を補正。</div>
     </div>
     </details>
   </section>
@@ -483,7 +520,7 @@ button.sub-btn:active{transform:translateY(1px)}
 
 <script>
 (function(){
-  const WEATHER=[["sunny","晴れ",0],["cloudy","曇り",0],["drizzle","小雨",0.5],["rain","雨",1.5],["wind","強風",2.5],["rainwind","雨+強風",3.5]];
+  const WEATHER=[["sunny","晴れ",0],["cloudy","曇り",0],["drizzle","小雨",0.5],["rain","雨",1.5],["wind","強風",2.5],["rainwind","雨+強風",3.5],["snow","雪",3.0]];
   const $=id=>document.getElementById(id);
   for(const sel of [$("fWeather"),$("raceWeather")]){
     sel.innerHTML=WEATHER.map(w=>`<option value="${w[0]}">${w[1]}</option>`).join("");
@@ -587,16 +624,17 @@ button.sub-btn:active{transform:translateY(1px)}
   const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 
   /* ---------- state & storage ---------- */
-  const HOME={name:"滋賀県大津市唐橋町",lat:34.9906,lng:135.9072};
-  let state={runs:[],settings:{age:47,rest:60,max:181,vo2:53,monthly:90,monthlyDefV:1,raceTemp:5,raceHum:66,raceWeather:"cloudy",raceDefV:2,loc:{...HOME}}};
+  const HOME={name:"滋賀県大津市 石山駅",lat:34.9800,lng:135.8996};
+  const OLD_HOME={lat:34.9906,lng:135.9072};
+  let state={runs:[],settings:{age:40,rest:60,max:180,vo2:50,monthly:100,monthlyDefV:1,raceTemp:5,raceHum:66,raceWeather:"cloudy",raceDefV:2,loc:{...HOME}}};
     const LS="marathon-predictor-v1";
   function loadLocal(){try{const j=localStorage.getItem(LS);if(j)return JSON.parse(j);}catch(e){}return null;}
   function save(){
     try{localStorage.setItem(LS,JSON.stringify(state));}catch(e){}
   }
-  const DEFAULT_RACES=[{id:"r20260222",name:"大阪マラソン2026",date:"2026-02-22",sec:3*3600+27*60+5,hr:169,hrMax:180,start:555,lat:34.6873,lng:135.5259},{id:"r20250216",name:"京都マラソン2025",date:"2025-02-16",sec:3*3600+38*60+20,hr:166,hrMax:177,start:540,lat:35.0116,lng:135.7681}];
+  const DEFAULT_RACES=[{id:"sample-kyoto2026",name:"京都マラソン2026（サンプル）",date:"2026-02-15",sec:4*3600,hr:160,hrMax:180,start:540,lat:35.0116,lng:135.7681}];   // 初回表示用のサンプル
   state.races=DEFAULT_RACES.map(r=>({...r}));
-  const local=loadLocal(); if(local){state.runs=local.runs||[];if(Array.isArray(local.races)){state.races=local.races;const NM={"2026-02-22":["大阪マラソン","大阪マラソン2026"],"2025-02-16":["京都マラソン","京都マラソン2025"]};state.races.forEach(r=>{const m=NM[r.date];if(m&&(!r.name||r.name===m[0]))r.name=m[1];const d0=DEFAULT_RACES.find(x=>x.date===r.date);if(d0){for(const k of ["start","lat","lng"])if(r[k]==null)r[k]=d0[k];}});}Object.assign(state.settings,local.settings||{});if(!state.settings.loc)state.settings.loc={...HOME};const DS={age:47,rest:60,max:181};for(const k in DS)if(state.settings[k]==null)state.settings[k]=DS[k];if(state.settings.vo2===undefined)state.settings.vo2=53;if(!local.settings||local.settings.monthlyDefV!==1)Object.assign(state.settings,{monthly:90,monthlyDefV:1});if(!local.settings||local.settings.raceDefV!==2)Object.assign(state.settings,{raceTemp:5,raceHum:66,raceWeather:"cloudy",raceDefV:2});}
+  const local=loadLocal(); if(local){state.runs=local.runs||[];if(Array.isArray(local.races)){state.races=local.races;const NM={"2026-02-22":["大阪マラソン","大阪マラソン2026"],"2025-02-16":["京都マラソン","京都マラソン2025"]};state.races.forEach(r=>{const m=NM[r.date];if(m&&(!r.name||r.name===m[0]))r.name=m[1];const d0=DEFAULT_RACES.find(x=>x.date===r.date);if(d0){for(const k of ["start","lat","lng"])if(r[k]==null)r[k]=d0[k];}});}Object.assign(state.settings,local.settings||{});if(!state.settings.loc)state.settings.loc={...HOME};if(state.settings.loc.lat===OLD_HOME.lat&&state.settings.loc.lng===OLD_HOME.lng)state.settings.loc={...HOME};const DS={age:40,rest:60,max:180};for(const k in DS)if(state.settings[k]==null)state.settings[k]=DS[k];if(state.settings.vo2===undefined)state.settings.vo2=50;if(!local.settings||local.settings.monthlyDefV!==1)Object.assign(state.settings,{monthly:100,monthlyDefV:1});if(!local.settings||local.settings.raceDefV!==2)Object.assign(state.settings,{raceTemp:5,raceHum:66,raceWeather:"cloudy",raceDefV:2});}
 
   /* ---------- UI ---------- */
   function syncSettingsUI(){
@@ -703,14 +741,23 @@ button.sub-btn:active{transform:translateY(1px)}
   }
 
   // 同じフォルダに置いた画像ファイルがあれば表示(無ければメダルアイコン)
-  function raceImg(r){const n=r.name||"";return n.startsWith("大阪マラソン")?"osaka.png":n.startsWith("京都マラソン")?"kyoto.png":null;}
+  function raceImg(r){const n=r.name||"";return n.startsWith("大阪マラソン")?"osaka.png":n.startsWith("京都マラソン")?"kyoto.png":null;}   // それ以外はトロフィー
+  const KNOWN_RACES=[{key:"大阪マラソン",start:555,lat:34.6873,lng:135.5259},{key:"京都マラソン",start:540,lat:35.0116,lng:135.7681}];
+  function raceCondText(r){
+    const wl=(WEATHER.find(x=>x[0]===r.weather)||[0,""])[1], parts=[];
+    if(r.hr)parts.push(`心拍${r.hr}${r.hrMax?`/最大${r.hrMax}`:""}`);
+    if(r.temp!=null)parts.push(`${wl} ${r.temp}℃${r.hum!=null?` 湿度${r.hum}%`:""}${raceCond(r)>0.05?` 条件補正 +${raceCond(r).toFixed(1)}%`:""}`);
+    else if(r.weather)parts.push(`${wl}(気温データなし)`);
+    else if(r.lat!=null)parts.push(r._wxTried?"気象データなし":"気象データ取得中");
+    return parts.join("、");
+  }
   function renderRaces(){
     const ul=$("races"); if(!ul)return;
     const rs=[...(state.races||[])].sort((a,b)=>b.date.localeCompare(a.date));
     if(!rs.length){ul.innerHTML='<li class="empty" style="display:block">レース結果がありません。</li>';return;}
     ul.innerHTML=rs.map(r=>{const v=vo2(42195/(r.sec/60))/frac(r.sec/60);
-      return `<li><div><div class="rname"><span class="rlogo"><svg class="medal" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 2h4l2 5-3 2z" fill="#6FA88D"/><path d="M17 2h-4l-2 5 3 2z" fill="#8EC5FF"/><circle cx="12" cy="15" r="6.5" fill="#F2C230" stroke="#C99A14" stroke-width="1.2"/><circle cx="12" cy="15" r="3.6" fill="none" stroke="#C99A14" stroke-width="1"/></svg>${raceImg(r)?`<img class="rimg" src="${raceImg(r)}" alt="" hidden onload="this.hidden=false;this.previousElementSibling.style.display='none'" onerror="this.remove()">`:""}</span>${esc(r.name||"")}</div><div class="top">${fmtDate(r.date)} <span class="num">${hms(r.sec)}</span>(<span class="num">${ms(r.sec/42.195)}</span>/km)</div>
-        <div class="cond">${r.hr?`心拍${r.hr}${r.hrMax?`/最大${r.hrMax}`:""}`:""}${r.temp!=null?`、${(WEATHER.find(x=>x[0]===r.weather)||[0,""])[1]} ${r.temp}℃${r.hum!=null?` 湿度${r.hum}%`:""}${raceCond(r)>0.05?` 条件補正 +${raceCond(r).toFixed(1)}%`:""}`:r.weather?`、${(WEATHER.find(x=>x[0]===r.weather)||[0,""])[1]}(気温データなし)`:"、気象データ取得中"}</div></div>
+      return `<li><div><div class="rname"><span class="rlogo"><svg class="medal" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h10v5a5 5 0 0 1-10 0z" fill="#F2C230" stroke="#C99A14" stroke-width="1"/><path d="M7 5H4v1.5A3.5 3.5 0 0 0 7.6 10M17 5h3v1.5A3.5 3.5 0 0 1 16.4 10" fill="none" stroke="#C99A14" stroke-width="1.4"/><path d="M10.5 13h3l.6 4h-4.2z" fill="#E0AE1F"/><rect x="7.5" y="17" width="9" height="3.2" rx=".8" fill="#C99A14"/><path d="M9.5 5.2v3" stroke="#FFF3C4" stroke-width="1.2" stroke-linecap="round" opacity=".8"/></svg>${raceImg(r)?`<img class="rimg" src="${raceImg(r)}" alt="" hidden onload="this.hidden=false;this.previousElementSibling.style.display='none'" onerror="this.remove()">`:""}</span>${esc(r.name||"")}</div><div class="top">${fmtDate(r.date)} <span class="num">${hms(r.sec)}</span>(<span class="num">${ms(r.sec/42.195)}</span>/km)</div>
+        <div class="cond">${esc(raceCondText(r))}</div></div>
         <div class="pred"><small>VDOT ${v.toFixed(1)}</small></div>
         <button class="del rdel" data-id="${esc(r.id)}" aria-label="${esc(r.date)}のレース結果を削除">削除</button></li>`;}).join("");
     ul.querySelectorAll(".rdel").forEach(b=>b.addEventListener("click",()=>{
@@ -744,19 +791,22 @@ button.sub-btn:active{transform:translateY(1px)}
   function startStr(){const m=startMin();return m==null?null:`${Math.floor(m/60)}:${pad(m%60)}`;}
 
   /* ---------- location ---------- */
-  function syncLocUI(){const l=state.settings.loc;$("sLocName").value=l.name||"";$("sLat").value=l.lat;$("sLng").value=l.lng;const wp=$("wxPlace");if(wp)wp.textContent=l.name||"指定地点";}
+  function syncLocUI(){try{syncGeoUI();}catch(_){}const l=state.settings.loc;$("sLocName").value=l.name||"";$("sLat").value=l.lat;$("sLng").value=l.lng;const wp=$("wxPlace");if(wp)wp.textContent=l.name||"指定地点";}
   ["sLocName","sLat","sLng"].forEach(id=>$(id).addEventListener("input",()=>{
     const lat=parseFloat($("sLat").value),lng=parseFloat($("sLng").value);
     state.settings.loc={name:$("sLocName").value.trim(),lat:isNaN(lat)?HOME.lat:lat,lng:isNaN(lng)?HOME.lng:lng};save();const wp=$("wxPlace");if(wp)wp.textContent=state.settings.loc.name||"指定地点";}));
-  $("homeBtn").onclick=()=>{state.settings.loc={...HOME};save();syncLocUI();};
+    function fmtAt(ts){const d=new Date(ts);return `${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()} ${d.getHours()}:${pad(d.getMinutes())}`;}
+  function syncGeoUI(){const g=state.settings.geo;
+    $("geoNote").textContent=g?`記憶した地点:${g.lat}, ${g.lng}(${fmtAt(g.at)}取得)`:"「現在地を取得し記憶」で次回以降もその地点を使用。";}
+    function schedWxSafe(){try{schedWx();}catch(_){}}
   $("geoBtn").onclick=()=>{
     if(!navigator.geolocation){alert("この端末では現在地を取得できません。緯度・経度を直接入力してください。");return;}
-    navigator.geolocation.getCurrentPosition(p=>{state.settings.loc={name:"現在地",lat:+p.coords.latitude.toFixed(4),lng:+p.coords.longitude.toFixed(4)};save();syncLocUI();},
+    navigator.geolocation.getCurrentPosition(p=>{const g={lat:+p.coords.latitude.toFixed(4),lng:+p.coords.longitude.toFixed(4),at:Date.now()};state.settings.geo=g;state.settings.loc={name:"記憶した地点",lat:g.lat,lng:g.lng};save();syncLocUI();schedWxSafe();},
       ()=>alert("現在地を取得できませんでした。位置情報の許可を確認するか、緯度・経度を直接入力してください。"),{timeout:10000});
   };
 
   /* ---------- weather (Open-Meteo) ---------- */
-  const RAIN2=new Set([63,65,67,73,75,77,81,82,86,95,96,99]), RAIN1=new Set([51,53,55,56,57,61,66,71,80,85]);
+  const RAIN2=new Set([63,65,67,81,82,95,96,99]), RAIN1=new Set([51,53,55,56,57,61,66,80]), SNOW=new Set([71,73,75,77,85,86]);
   let wxSeq=0, wxTimer=null;
   function setWxStatus(html,ok){$("wxStatus").innerHTML=html;$("wxBox").classList.toggle("ok",!!ok);}
   function resetWx(){setWxStatus(`日付と走り始め時刻を選ぶと、<b id="wxPlace">${esc(state.settings.loc.name||"指定地点")}</b>の気温・湿度・天候を自動で入れます。`);}
@@ -805,10 +855,10 @@ button.sub-btn:active{transform:translateY(1px)}
     const temp=avg(vals("temperature_2m")), hum=avg(vals("relative_humidity_2m")), pr=avg(vals("precipitation"))||0;
     const wind=Math.max(0,...vals("wind_speed_10m")), codes=vals("weather_code");
     if(temp==null)return null;
-    let rain=0;for(const c of codes){if(RAIN2.has(c))rain=2;else if(RAIN1.has(c))rain=Math.max(rain,1);}
+    let rain=0,snow=codes.filter(c=>SNOW.has(c)).length;for(const c of codes){if(RAIN2.has(c))rain=2;else if(RAIN1.has(c))rain=Math.max(rain,1);}
     if(pr>=1)rain=2;else if(pr>=0.2)rain=Math.max(rain,1);
     const windy=wind>=7, clear=codes.length&&codes.filter(c=>c<=1).length>=codes.length/2;
-    const w=rain===2&&windy?"rainwind":rain===2?"rain":windy?"wind":rain===1?"drizzle":clear?"sunny":"cloudy";
+    const w=snow&&snow>=codes.length/3?"snow":rain===2&&windy?"rainwind":rain===2?"rain":windy?"wind":rain===1?"drizzle":clear?"sunny":"cloudy";
     return {temp:Math.round(temp*10)/10,hum:Math.round(hum),weather:w,wind,pr,h0,h1};
   }
   async function autoWeather(){
@@ -882,12 +932,65 @@ button.sub-btn:active{transform:translateY(1px)}
   window.addEventListener("resize",fitSubtitles);
   if(document.fonts&&document.fonts.ready)document.fonts.ready.then(fitSubtitles);
   document.querySelectorAll("details").forEach(d=>d.addEventListener("toggle",fitSubtitles));
+  // race form (追加)
+  fillSel($("rTh"),2,7,"--");
+  $("rTm").innerHTML='<option value="">--</option>'+Array.from({length:60},(_,i)=>`<option value="${i}">${pad(i)}</option>`).join("");
+  $("rTs").innerHTML='<option value="">--</option>'+Array.from({length:60},(_,i)=>`<option value="${i}">${pad(i)}</option>`).join("");
+  fillSel($("rHr"),100,220,"--");fillSel($("rHrMax"),100,230,"--");fillSel($("rTemp"),-10,40,"--");fillSel($("rHum"),0,100,"--");
+  $("rWeather").innerHTML='<option value="">--</option>'+WEATHER.map(w=>`<option value="${w[0]}">${w[1]}</option>`).join("");
+  fillSel($("rSh"),5,15);$("rSm").innerHTML=[0,5,10,15,20,25,30,35,40,45,50,55].map(m=>`<option value="${m}">${pad(m)}</option>`).join("");
+  $("rSh").value=9;$("rSm").value=0;
+  let rWxFetched=false;
+  ["rTemp","rHum","rWeather"].forEach(id=>$(id).addEventListener("change",()=>{rWxFetched=false;}));
+  // 大会名から開催地を推定(大阪・京都は既知の座標、それ以外は地名検索、見つからなければ「走る場所」)
+  async function locateRace(name){
+    const k=KNOWN_RACES.find(x=>name.startsWith(x.key));if(k)return {lat:k.lat,lng:k.lng,label:k.key.replace("マラソン","")};
+    const q=name.replace(/（.*?）|\(.*?\)/g,"").replace(/\d{2,4}/g,"").replace(/(フル)?マラソン.*$/,"").replace(/(国際|シティ|市民|ロード)$/,"").trim();
+    if(q){try{const d=await getJson(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=1&language=ja&country_code=JP`);
+      if(d&&d.results&&d.results[0])return {lat:d.results[0].latitude,lng:d.results[0].longitude,label:d.results[0].name};}catch(e){if(e&&e.kind==="blocked")throw e;}}
+    return {lat:state.settings.loc.lat,lng:state.settings.loc.lng,label:(state.settings.loc.name||"走る場所")+"(開催地が特定できないため)"};
+  }
+  $("rWxBtn").addEventListener("click",async()=>{
+    const msg=$("rWxMsg"),name=$("rName").value.trim(),date=$("rDate").value;
+    if(!name||!date){msg.textContent="先に大会名と日付を入れてください。";return;}
+    msg.textContent="天気を取得しています…";
+    try{
+      const loc=await locateRace(name);
+      const hr=await fetchHourly(date,loc);
+      const hh=$("rTh").value, dur=hh===""?240:(+hh*60+(+$("rTm").value||0));
+      const s=summarize(hr,(+$("rSh").value)*60+(+$("rSm").value),dur);
+      if(!s){msg.textContent="その日時の気象データが見つかりませんでした。手で選んでください。";return;}
+      setSel($("rTemp"),Math.round(s.temp));setSel($("rHum"),Math.round(s.hum));$("rWeather").value=s.weather;rWxFetched=true;
+      msg.textContent=`${loc.label} ${s.h0}〜${s.h1+1}時の平均:${(WEATHER.find(x=>x[0]===s.weather)||[0,""])[1]}・${s.temp}℃・湿度${s.hum}%`;
+    }catch(e){msg.textContent=wxErrorText(e);}
+  });
+  function showRDate(){const v=$("rDate").value;$("rDateTxt").innerHTML=v?fmtDate(v):"日付を選択";}
+  $("rDate").addEventListener("input",showRDate);$("rDate").addEventListener("change",showRDate);showRDate();
+  $("raceAdd").addEventListener("click",()=>{
+    const err=$("raceErr"),name=$("rName").value.trim(),date=$("rDate").value,hh=$("rTh").value;
+    if(!name){err.textContent="大会名を入力してください。";return;}
+    if(!date){err.textContent="レースの日付を選んでください。";return;}
+    if(hh===""){err.textContent="タイムを選んでください。";return;}
+    const sv=id=>$(id).value===""?null:+$(id).value;
+    const sec=+hh*3600+(sv("rTm")||0)*60+(sv("rTs")||0), hr=sv("rHr"), hrMax=sv("rHrMax");
+    if(hr&&hrMax&&hrMax<hr){err.textContent="最大心拍が平均心拍より低くなっています。";return;}
+    err.textContent="";
+    const rc={id:"r"+Date.now().toString(36),name,date,sec,hr,hrMax};
+    const t=sv("rTemp"),hu=sv("rHum"),w=$("rWeather").value;
+    if(t!=null){rc.temp=t;rc.hum=hu;rc.weather=w||"cloudy";rc.wxSrc=rWxFetched?"Open-Meteo":"手入力";}
+    else if(w){rc.weather=w;rc.wxSrc="手入力";}
+    const k=KNOWN_RACES.find(x=>name.startsWith(x.key));
+    if(k&&t==null){rc.start=k.start;rc.lat=k.lat;rc.lng=k.lng;delete rc.wxSrc;}
+    state.races=state.races||[];state.races.push(rc);save();
+    ["rName","rDate","rTh","rTm","rTs","rHr","rHrMax","rTemp","rHum","rWeather"].forEach(id=>$(id).value="");$("rSh").value=9;$("rSm").value=0;rWxFetched=false;$("rWxMsg").textContent="大会名・日付・スタート時刻から、開催地の天候・気温・湿度を取得します。";showRDate();render();
+    if(k&&t==null)fetchRaceWx();
+  });
   // init
   const today=new Date();$("fDate").value=`${today.getFullYear()}-${pad(today.getMonth()+1)}-${pad(today.getDate())}`;showDateWd();
   /* ---------- form defaults ---------- */
   const DEF={startH:17,startM:0,dist:10,paceSec:290,hr:150,hrMax:160};
   function applyDefaults(){
-    $("fSh").value=DEF.startH;$("fSm").value=DEF.startM;
+    const nw=new Date();$("fSh").value=nw.getHours();$("fSm").value=Math.floor(nw.getMinutes()/5)*5;   // 現在時刻(5分単位に切り捨て)
     setDist(DEF.dist);setPace(DEF.paceSec);setTime(DEF.paceSec*DEF.dist);
     $("fHr").value=DEF.hr;$("fHrMax").value=DEF.hrMax;$("fRace").checked=false;lastEdited="pace";
     updatePreview();schedWx();
@@ -895,7 +998,7 @@ button.sub-btn:active{transform:translateY(1px)}
   {let ch=false;for(const r of state.runs){if(r.predMin===undefined){Object.assign(r,snapshotFor(r));ch=true;}}if(ch)save();}
   syncSettingsUI();syncLocUI();render();applyDefaults();fitSubtitles();
   // 過去レースの気象を日付・開始時刻・場所から取得(Open-Meteo)。取得できなければ公式発表のスタート時データで代用
-  (async()=>{
+  async function fetchRaceWx(){
     const FALLBACK={"2026-02-22":{temp:11.3,hum:59,weather:"sunny",wxSrc:"公式発表(スタート時)"},"2025-02-16":{weather:"cloudy",wxSrc:"当日の天候のみ"}};
     let changed=false;
     for(const rc of (state.races||[])){
@@ -909,7 +1012,8 @@ button.sub-btn:active{transform:translateY(1px)}
       rc._wxTried=true;changed=true;
     }
     if(changed){save();render();}
-  })();
+  }
+  fetchRaceWx();
 })();
 </script>
 </body>
