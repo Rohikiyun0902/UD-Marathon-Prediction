@@ -220,6 +220,34 @@ button.primary:focus-visible{outline:3px solid #FFC2D1;outline-offset:4px}
 .g4span2 .hrpair>div{gap:3px}
 .g4span2 .hrpair .sub{font-size:11px}
 .g4{align-items:end}
+
+/* section subtitles */
+.sh{display:flex;align-items:center;gap:9px;font-size:16.5px;font-weight:700;letter-spacing:.04em;color:var(--ink);
+  margin:0 0 8px;padding:2px 0 6px;border-bottom:1px solid rgba(242,140,40,.35);position:relative}
+.sh::before{content:"";flex:none;width:6px;height:1.15em;border-radius:2px;background:var(--title);box-shadow:4px 0 0 rgba(242,140,40,.35)}
+.sh::after{content:attr(data-en);margin-left:auto;font-family:"Barlow Condensed","Arial Narrow",sans-serif;font-weight:700;font-size:11.5px;letter-spacing:.2em;color:var(--title);opacity:.9}
+summary.sh{list-style:none;cursor:pointer;padding:2px 0 6px}
+summary.sh::-webkit-details-marker{display:none}
+details>summary.sh::after{content:attr(data-en) "  ▼"}
+details[open]>summary.sh::after{content:attr(data-en) "  ▲"}
+details>summary.sh:hover::before{background:#FFB066}
+
+.runner-img[hidden]{display:none!important}
+
+/* 入力ボックスの高さを全体で統一 */
+input:not([type=checkbox]):not([type=hidden]),select,.datebox{height:44px!important;min-height:44px!important;box-sizing:border-box;padding-top:0!important;padding-bottom:0!important;line-height:normal}
+select{padding-left:10px}
+select.nsel,.tsel select{padding-left:2px;padding-right:2px}
+.datebox{padding-top:0;padding-bottom:0}
+
+.g4>div:not(.grpbox){padding-bottom:7.5px}
+
+.preview[hidden]{display:none!important}
+.racechk .hint.rc{display:inline;margin-left:2px}
+button.primary{font-size:15.5px;letter-spacing:.04em}
+
+button.primary{white-space:nowrap;font-size:16px}
+button.primary .bsub{font-size:13px;letter-spacing:0}
 </style>
 </head>
 <body>
@@ -253,11 +281,11 @@ button.primary:focus-visible{outline:3px solid #FFC2D1;outline-offset:4px}
   </header>
 
   <section>
-    <h2>今日のランを記録</h2>
+    <h2 class="sh" data-en="TODAY'S RUN">今日のランを記録</h2>
     <div class="panel">
       <div class="g6">
         <div class="c3"><label for="fDate">日付</label><div class="datebox"><span class="num" id="fDateTxt" aria-hidden="true"></span><input id="fDate" type="date"></div></div>
-        <div class="c3"><label id="lStart">走り始め</label>
+        <div class="c3"><label id="lStart">走り始め時刻</label>
           <div class="tsel" role="group" aria-labelledby="lStart">
             <select id="fSh" aria-label="時"></select><i>:</i><select id="fSm" aria-label="分"></select>
           </div></div>
@@ -277,7 +305,7 @@ button.primary:focus-visible{outline:3px solid #FFC2D1;outline-offset:4px}
             <select id="fPm" aria-label="分"></select><i>:</i><select id="fPs" aria-label="秒"></select>
           </div></div>
         <div class="c6 hint tight">タイムかペースの片方を選ぶと、もう一方は自動で入ります</div>
-        <div class="c6 wx" id="wxBox"><span id="wxStatus">日付と走り始めた時刻を選ぶと、<b id="wxPlace"></b>の気温・湿度・天候を自動で入れます。</span>
+        <div class="c6 wx" id="wxBox"><span id="wxStatus">日付と走り始め時刻を選ぶと、<b id="wxPlace"></b>の気温・湿度・天候を自動で入れます。</span>
           <button type="button" id="wxBtn">天気を取得</button></div>
         <div class="c2"><label for="fTemp">気温(℃)</label><select id="fTemp" class="nsel"></select></div>
         <div class="c2"><label for="fHum">湿度(%)</label><select id="fHum" class="nsel"></select></div>
@@ -288,16 +316,16 @@ button.primary:focus-visible{outline:3px solid #FFC2D1;outline-offset:4px}
             <option value="1.5">起伏あり</option>
             <option value="3.5">坂多め</option>
           </select></div>
-        <div class="c4 racechk"><label class="check"><input id="fRace" type="checkbox"><span>全力で走った<span class="hint rc">レース・TT(心拍なしでも試算)</span></span></label></div>
+        <div class="c4 racechk"><label class="check"><input id="fRace" type="checkbox"><span>全力で走った<span class="hint rc">※レース・TT(心拍なしでも試算)</span></span></label></div>
       </div>
-      <div class="preview" id="preview"></div>
+      <div class="preview" id="preview" hidden></div>
       <div class="err" id="formErr"></div>
-      <button class="primary" id="addBtn">記録して試算</button>
+      <button class="primary" id="addBtn">記録して試算<span class="bsub">（このランからタイム予測）</span></button>
     </div>
   </section>
 
   <section id="predSec">
-    <h2>フルマラソン予想タイム</h2>
+    <h2 class="sh" data-en="PREDICTION">フルマラソン予想タイム</h2>
   <div class="clock" aria-live="polite">
     <div class="ctop">
       <div class="cl"><div class="lab">42.195km 予想フィニッシュ</div>
@@ -316,17 +344,17 @@ button.primary:focus-visible{outline:3px solid #FFC2D1;outline-offset:4px}
   </section>
 
   <section>
-    <h2>予想タイムの推移</h2>
+    <h2 class="sh" data-en="TREND">予想タイムの推移</h2>
     <div class="panel chart" id="chart"><div class="empty">2回以上記録するとグラフが表示されます。</div></div>
   </section>
 
   <section>
-    <h2>記録一覧</h2>
+    <h2 class="sh" data-en="RUN LOG">記録一覧</h2>
     <div class="panel"><ul class="runs" id="runs"></ul></div>
   </section>
 
   <section>
-    <h2>あなたの基礎情報</h2>
+    <h2 class="sh" data-en="PROFILE">あなたの基礎情報</h2>
     <div class="panel">
       <div class="g4">
         <div><label for="sAge">年齢</label><select id="sAge" class="nsel"></select></div>
@@ -343,7 +371,7 @@ button.primary:focus-visible{outline:3px solid #FFC2D1;outline-offset:4px}
 
   <section>
     <details class="backup">
-      <summary>走る場所</summary>
+      <summary class="sh" data-en="LOCATION">走る場所</summary>
     <div class="panel">
       <div class="g6">
         <div class="c6"><label for="sLocName">地点名</label><input id="sLocName" type="text"></div>
@@ -358,7 +386,7 @@ button.primary:focus-visible{outline:3px solid #FFC2D1;outline-offset:4px}
 
   <section>
     <details class="backup">
-      <summary>データの保存</summary>
+      <summary class="sh" data-en="BACKUP">データの保存</summary>
     <div class="panel">
       <p class="store">記録はこの端末のブラウザ内に保存されます。機種変更やブラウザのデータ削除に備えて、ときどき書き出しておくと安心です。</p>
       <div class="btns"><button type="button" id="expBtn">記録を書き出す</button><button type="button" id="impBtn">記録を読み込む</button>
@@ -370,7 +398,7 @@ button.primary:focus-visible{outline:3px solid #FFC2D1;outline-offset:4px}
 
   <section>
     <details class="method">
-      <summary>試算の考え方</summary>
+      <summary class="sh" data-en="METHOD">試算の考え方</summary>
       <ul>
         <li>練習ランは、ペースから求めた酸素摂取量と「心拍予備率(平均心拍が安静時〜最大のどこにあるか)」から最大酸素摂取量(VDOT)を推定します。全力走はタイムから直接VDOTを算出します(ジャック・ダニエルズ式)。</li>
         <li>気温・湿度・天候・起伏の影響を差し引き、「好条件で走った場合」のペースに換算してから計算します。暑い日の練習でも正当に評価されます。</li>
@@ -544,7 +572,7 @@ button.primary:focus-visible{outline:3px solid #FFC2D1;outline-offset:4px}
     const agg=aggregate(state.runs,s);
     if(agg){
       $("bigTime").textContent=hms(agg.min*60);
-      $("bigRange").innerHTML=`目安 <span class="num">${hms(agg.min*60*0.97)}〜${hms(agg.min*60*1.04)}</span>`;
+      $("bigRange").innerHTML=`目安レンジ <span class="num">${hms(agg.min*60*0.97)}〜${hms(agg.min*60*1.04)}</span>`;
       const meta=[`平均ペース <b class="num">${ms(agg.min*60/42.195)}</b>/km`,`走力指標 <b class="num">${agg.vdot.toFixed(1)}</b>`,
         agg.vRuns?`練習データ <b class="num">${agg.vRuns.toFixed(1)}</b>(${agg.n}本)`:`練習データ <b>なし</b>`,
         agg.vWatch?`VO2max <b class="num">${agg.vWatch}</b>`:null].filter(Boolean);
@@ -621,7 +649,7 @@ button.primary:focus-visible{outline:3px solid #FFC2D1;outline-offset:4px}
   const RAIN2=new Set([63,65,67,73,75,77,81,82,86,95,96,99]), RAIN1=new Set([51,53,55,56,57,61,66,71,80,85]);
   let wxSeq=0, wxTimer=null;
   function setWxStatus(html,ok){$("wxStatus").innerHTML=html;$("wxBox").classList.toggle("ok",!!ok);}
-  function resetWx(){setWxStatus(`日付と走り始めた時刻を選ぶと、<b id="wxPlace">${esc(state.settings.loc.name||"指定地点")}</b>の気温・湿度・天候を自動で入れます。`);}
+  function resetWx(){setWxStatus(`日付と走り始め時刻を選ぶと、<b id="wxPlace">${esc(state.settings.loc.name||"指定地点")}</b>の気温・湿度・天候を自動で入れます。`);}
   async function getJson(url){
     let lastE;
     for(let attempt=0;attempt<2;attempt++){                 // タイムアウト10秒、1回だけ再試行
@@ -691,7 +719,7 @@ button.primary:focus-visible{outline:3px solid #FFC2D1;outline-offset:4px}
   const schedWx=()=>{clearTimeout(wxTimer);wxTimer=setTimeout(autoWeather,500);};
   ["fDate","fSh","fSm"].forEach(id=>$(id).addEventListener("change",schedWx));
   ["fTh","fTm","fTs","fPm","fPs"].forEach(id=>$(id).addEventListener("change",()=>{if(startMin()!=null)schedWx();}));
-  $("wxBtn").onclick=()=>{if(startMin()==null){setWxStatus("先に走り始めた時刻を選んでください。");return;}autoWeather();};
+  $("wxBtn").onclick=()=>{if(startMin()==null){setWxStatus("先に走り始め時刻を選んでください。");return;}autoWeather();};
 
   /* ---------- backup ---------- */
   $("expBtn").onclick=()=>{
