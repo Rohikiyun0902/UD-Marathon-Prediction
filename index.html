@@ -316,6 +316,10 @@ button.sub-btn:active{transform:translateY(1px)}
 .locnote{margin-top:8px}
 
 .locbtns .geobtn{height:44px;padding:0 4px;font-size:12px;line-height:1.25;font-weight:700}
+
+.reset-box{margin-top:12px;padding-top:10px;border-top:1px dashed var(--line)}
+button.danger-btn{box-sizing:border-box;width:100%;padding:10px;font-weight:700;border-radius:10px;background:transparent;border:1.5px solid #E07A6A;color:#FFB4A6}
+button.danger-btn.armed{background:#C0392B;border-color:#C0392B;color:#fff}
 </style>
 </head>
 <body>
@@ -494,6 +498,10 @@ button.sub-btn:active{transform:translateY(1px)}
       <div class="btns"><button type="button" id="expBtn">記録を書き出す</button><button type="button" id="impBtn">記録を読み込む</button>
         <input type="file" id="impFile" accept=".json,application/json" hidden></div>
       <div class="err" id="bkMsg"></div>
+      <div class="reset-box">
+        <button type="button" id="resetBtn" class="danger-btn">全データ削除(初期状態に戻す)</button>
+        <div class="hint" id="resetNote">記録・レース結果・基礎情報・走る場所をすべて消します。必要なら先に書き出してください。</div>
+      </div>
     </div>
     </details>
   </section>
@@ -964,6 +972,9 @@ button.sub-btn:active{transform:translateY(1px)}
       msg.textContent=`${loc.label} ${s.h0}〜${s.h1+1}時の平均:${(WEATHER.find(x=>x[0]===s.weather)||[0,""])[1]}・${s.temp}℃・湿度${s.hum}%`;
     }catch(e){msg.textContent=wxErrorText(e);}
   });
+  // 過去レース入力の初期値:4時間ちょうど、心拍 平均160・最大180
+  function setRaceFormDefaults(){$("rTh").value=4;$("rTm").value=0;$("rTs").value=0;$("rHr").value=160;$("rHrMax").value=180;}
+  setRaceFormDefaults();
   function showRDate(){const v=$("rDate").value;$("rDateTxt").innerHTML=v?fmtDate(v):"日付を選択";}
   $("rDate").addEventListener("input",showRDate);$("rDate").addEventListener("change",showRDate);showRDate();
   $("raceAdd").addEventListener("click",()=>{
@@ -982,9 +993,18 @@ button.sub-btn:active{transform:translateY(1px)}
     const k=KNOWN_RACES.find(x=>name.startsWith(x.key));
     if(k&&t==null){rc.start=k.start;rc.lat=k.lat;rc.lng=k.lng;delete rc.wxSrc;}
     state.races=state.races||[];state.races.push(rc);save();
-    ["rName","rDate","rTh","rTm","rTs","rHr","rHrMax","rTemp","rHum","rWeather"].forEach(id=>$(id).value="");$("rSh").value=9;$("rSm").value=0;rWxFetched=false;$("rWxMsg").textContent="大会名・日付・スタート時刻から、開催地の天候・気温・湿度を取得します。";showRDate();render();
+    ["rName","rDate","rTemp","rHum","rWeather"].forEach(id=>$(id).value="");setRaceFormDefaults();$("rSh").value=9;$("rSm").value=0;rWxFetched=false;$("rWxMsg").textContent="大会名・日付・スタート時刻から、開催地の天候・気温・湿度を取得します。";showRDate();render();
     if(k&&t==null)fetchRaceWx();
   });
+  // 全データ削除:1回目で確認状態、4秒以内にもう一度押すと削除して再読み込み
+  (function(){const b=$("resetBtn"),note=$("resetNote"),orig=b.textContent,origNote=note.textContent;let t=null;
+    b.addEventListener("click",()=>{
+      if(b.dataset.armed!=="1"){b.dataset.armed="1";b.classList.add("armed");b.textContent="もう一度押すと全データを削除";
+        note.textContent="この操作は元に戻せません。";clearTimeout(t);
+        t=setTimeout(()=>{b.dataset.armed="";b.classList.remove("armed");b.textContent=orig;note.textContent=origNote;},4000);return;}
+      clearTimeout(t);try{localStorage.removeItem(LS);}catch(_){}
+      location.reload();
+    });})();
   // init
   const today=new Date();$("fDate").value=`${today.getFullYear()}-${pad(today.getMonth()+1)}-${pad(today.getDate())}`;showDateWd();
   /* ---------- form defaults ---------- */
