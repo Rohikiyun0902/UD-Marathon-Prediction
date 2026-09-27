@@ -283,7 +283,11 @@ input[type="number"]{font-size:22px}
 button.sub-btn{box-sizing:border-box;width:100%;margin-top:4px;padding:10px;font-weight:700;border-radius:10px;background:#26604A;border:1px solid #6FA88D;color:var(--ink)}
 button.sub-btn:active{transform:translateY(1px)}
 
-.rname{font-weight:700;font-size:15px;color:var(--title);letter-spacing:.04em}
+.rname{font-weight:700;font-size:15px;color:var(--title);letter-spacing:.04em;display:flex;align-items:center;gap:6px}
+.rname .medal{width:20px;height:20px;flex:none}
+.rlogo{display:inline-flex;align-items:center;flex:none}
+.rimg{height:26px;width:auto;max-width:40px;object-fit:contain}
+.rimg[hidden]{display:none!important}
 </style>
 </head>
 <body>
@@ -566,9 +570,9 @@ button.sub-btn:active{transform:translateY(1px)}
   function save(){
     try{localStorage.setItem(LS,JSON.stringify(state));}catch(e){}
   }
-  const DEFAULT_RACES=[{id:"r20260222",name:"大阪マラソン",date:"2026-02-22",sec:3*3600+27*60+5,hr:169,hrMax:180},{id:"r20250216",name:"京都マラソン",date:"2025-02-16",sec:3*3600+38*60+20,hr:166,hrMax:177}];
+  const DEFAULT_RACES=[{id:"r20260222",name:"大阪マラソン2026",date:"2026-02-22",sec:3*3600+27*60+5,hr:169,hrMax:180},{id:"r20250216",name:"京都マラソン2025",date:"2025-02-16",sec:3*3600+38*60+20,hr:166,hrMax:177}];
   state.races=DEFAULT_RACES.map(r=>({...r}));
-  const local=loadLocal(); if(local){state.runs=local.runs||[];if(Array.isArray(local.races)){state.races=local.races;const NM={"2026-02-22":"大阪マラソン","2025-02-16":"京都マラソン"};state.races.forEach(r=>{if(!r.name&&NM[r.date])r.name=NM[r.date];});}Object.assign(state.settings,local.settings||{});if(!state.settings.loc)state.settings.loc={...HOME};const DS={age:47,rest:60,max:181};for(const k in DS)if(state.settings[k]==null)state.settings[k]=DS[k];if(state.settings.vo2===undefined)state.settings.vo2=53;if(!local.settings||local.settings.monthlyDefV!==1)Object.assign(state.settings,{monthly:90,monthlyDefV:1});if(!local.settings||local.settings.raceDefV!==2)Object.assign(state.settings,{raceTemp:5,raceHum:66,raceWeather:"cloudy",raceDefV:2});}
+  const local=loadLocal(); if(local){state.runs=local.runs||[];if(Array.isArray(local.races)){state.races=local.races;const NM={"2026-02-22":["大阪マラソン","大阪マラソン2026"],"2025-02-16":["京都マラソン","京都マラソン2025"]};state.races.forEach(r=>{const m=NM[r.date];if(m&&(!r.name||r.name===m[0]))r.name=m[1];});}Object.assign(state.settings,local.settings||{});if(!state.settings.loc)state.settings.loc={...HOME};const DS={age:47,rest:60,max:181};for(const k in DS)if(state.settings[k]==null)state.settings[k]=DS[k];if(state.settings.vo2===undefined)state.settings.vo2=53;if(!local.settings||local.settings.monthlyDefV!==1)Object.assign(state.settings,{monthly:90,monthlyDefV:1});if(!local.settings||local.settings.raceDefV!==2)Object.assign(state.settings,{raceTemp:5,raceHum:66,raceWeather:"cloudy",raceDefV:2});}
 
   /* ---------- UI ---------- */
   function syncSettingsUI(){
@@ -674,12 +678,14 @@ button.sub-btn:active{transform:translateY(1px)}
     drawChart(s);
   }
 
+  // 同じフォルダに置いた画像ファイルがあれば表示(無ければメダルアイコン)
+  function raceImg(r){const n=r.name||"";return n.startsWith("大阪マラソン")?"osaka.png":n.startsWith("京都マラソン")?"kyoto.png":null;}
   function renderRaces(){
     const ul=$("races"); if(!ul)return;
     const rs=[...(state.races||[])].sort((a,b)=>b.date.localeCompare(a.date));
     if(!rs.length){ul.innerHTML='<li class="empty" style="display:block">レース結果がありません。</li>';return;}
     ul.innerHTML=rs.map(r=>{const v=vo2(42195/(r.sec/60))/frac(r.sec/60);
-      return `<li><div><div class="rname">${esc(r.name||"")}</div><div class="top">${fmtDate(r.date)} <span class="num">${hms(r.sec)}</span>(<span class="num">${ms(r.sec/42.195)}</span>/km)</div>
+      return `<li><div><div class="rname"><span class="rlogo"><svg class="medal" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 2h4l2 5-3 2z" fill="#6FA88D"/><path d="M17 2h-4l-2 5 3 2z" fill="#8EC5FF"/><circle cx="12" cy="15" r="6.5" fill="#F2C230" stroke="#C99A14" stroke-width="1.2"/><circle cx="12" cy="15" r="3.6" fill="none" stroke="#C99A14" stroke-width="1"/></svg>${raceImg(r)?`<img class="rimg" src="${raceImg(r)}" alt="" hidden onload="this.hidden=false;this.previousElementSibling.style.display='none'" onerror="this.remove()">`:""}</span>${esc(r.name||"")}</div><div class="top">${fmtDate(r.date)} <span class="num">${hms(r.sec)}</span>(<span class="num">${ms(r.sec/42.195)}</span>/km)</div>
         <div class="cond">${r.hr?`心拍${r.hr}${r.hrMax?`/最大${r.hrMax}`:""}`:""}</div></div>
         <div class="pred"><small>VDOT ${v.toFixed(1)}</small></div>
         <button class="del rdel" data-id="${esc(r.id)}" aria-label="${esc(r.date)}のレース結果を削除">削除</button></li>`;}).join("");
