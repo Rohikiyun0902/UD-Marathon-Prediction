@@ -258,8 +258,21 @@ input[type="number"]{font-size:22px}
 .datebox{font-size:clamp(17px,5vw,21px)}
 
 /* 記録一覧の予測タイムも予想タイムと同じ黄色に */
-.runs .pred .num{color:#F2C230}
+.runs .pred .num{color:#F2C230;font-size:29px;line-height:1.1}
 .runs .bad .pred .num{color:var(--sub)}
+
+/* 基礎情報:年齢・VO2maxの見出しも心拍と同じ白の太字に */
+.g4>div:not(.grpbox)>label{font-weight:700;color:var(--ink)}
+
+.hint.oneline{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:clamp(9px,2.4vw,12px);letter-spacing:-.02em}
+
+/* 見出し右端の英字を約2倍に */
+.sh{white-space:nowrap}
+.sh::after{font-size:var(--en-fs,clamp(15px,5.4vw,22px));letter-spacing:.1em;line-height:1}
+
+/* 今日のラン:日付・走り始め時刻・気温・湿度・天候・コースの見出しも白の太字に */
+.g6>div:not(.grpbox)>label{font-weight:700;color:var(--ink)}
+.g6>div.racechk>label{font-weight:400}
 </style>
 </head>
 <body>
@@ -377,7 +390,7 @@ input[type="number"]{font-size:22px}
           </div></div>
         <div><label for="sVo2">VO2max</label><select id="sVo2" class="nsel"></select></div>
       </div>
-      <div class="hint">安静時心拍は起床直後の値。最大心拍が空欄なら年齢から推定します。<span id="maxHint"></span> VO2maxは時計などの値で、練習データと組み合わせて予想に反映します。</div>
+      <div class="hint oneline">安静時心拍は起床直後の値。最大心拍が空欄なら年齢から推定します。<span id="maxHint"></span><br>VO2maxは時計などの値で、練習データと組み合わせて予想に反映します。</div>
     </div>
   </section>
 
@@ -499,8 +512,8 @@ input[type="number"]{font-size:22px}
   }
   const WD="日月火水木金土";
   function wdOf(ds){const [y,m,d]=ds.split("-").map(Number);return WD[new Date(y,m-1,d).getDay()];}
-  function fmtDateText(ds){if(!ds)return "";const [y,m,d]=ds.split("-");return `${y}/${m}/${d}（${wdOf(ds)}）`;}
-  function fmtDate(ds){if(!ds)return "";const [y,m,d]=ds.split("-");return `<span class="num">${y}/${m}/${d}</span><span class="wd">（${wdOf(ds)}）</span>`;}
+  function fmtDateText(ds){if(!ds)return "";const [y,m,d]=ds.split("-");return `${y}/${+m}/${+d}（${wdOf(ds)}）`;}
+  function fmtDate(ds){if(!ds)return "";const [y,m,d]=ds.split("-");return `<span class="num">${y}/${+m}/${+d}</span><span class="wd">（${wdOf(ds)}）</span>`;}
   /* ---------- number lists (select) ---------- */
   function fillSel(el,from,to,blank){let o=blank!=null?`<option value="">${blank}</option>`:"";for(let v=from;v<=to;v++)o+=`<option value="${v}">${v}</option>`;el.innerHTML=o;}
   function setSel(el,v){
@@ -585,7 +598,7 @@ input[type="number"]{font-size:22px}
     if(agg){
       $("bigTime").textContent=hms(agg.min*60);
       $("bigRange").innerHTML=`目安レンジ <span class="num">${hms(agg.min*60*0.97)}〜${hms(agg.min*60*1.04)}</span>`;
-      const meta=[`平均ペース <b class="num">${ms(agg.min*60/42.195)}</b>/km`,`走力指標 <b class="num">${agg.vdot.toFixed(1)}</b>`,
+      const meta=[`平均ペース <b class="num">${ms(agg.min*60/42.195)}</b>/km`,`VDOT <b class="num">${agg.vdot.toFixed(1)}</b>`,
         agg.vRuns?`練習データ <b class="num">${agg.vRuns.toFixed(1)}</b>(${agg.n}本)`:`練習データ <b>なし</b>`,
         agg.vWatch?`VO2max <b class="num">${agg.vWatch}</b>`:null].filter(Boolean);
       if(agg.endur>0.05)meta.push(`長距離不足 <b>+${agg.endur.toFixed(1)}%</b>`);
@@ -605,7 +618,7 @@ input[type="number"]{font-size:22px}
       return `<li class="${e.vdot?"":"bad"}">
         <div><div class="top">${fmtDate(r.date)}${r.start?` <span class="num">${esc(r.start)}</span>`:""} <span class="num">${r.dist}km</span> <span class="num">${hms(r.sec)}</span>(<span class="num">${ms(r.sec/r.dist)}</span>/km)</div>
         <div class="cond">${esc(cond)}${e.cond>0.05?` 条件補正 +${e.cond.toFixed(1)}%`:""}</div></div>
-        <div class="pred">${e.vdot?`<span class="num">${hms(marathonMin(e.vdot)*60)}</span><small>好条件換算・VDOT ${e.vdot.toFixed(1)}</small>`:`<span class="num">—</span><small>${esc(e.why)}</small>`}</div>
+        <div class="pred">${e.vdot?`<span class="num">${hms(marathonMin(e.vdot)*60)}</span><small>VDOT ${e.vdot.toFixed(1)}</small>`:`<span class="num">—</span><small>${esc(e.why)}</small>`}</div>
         <button class="del" data-id="${r.id}" aria-label="${esc(r.date)}の記録を削除">削除</button></li>`;
     }).join("");
     ul.querySelectorAll(".del").forEach(b=>b.addEventListener("click",()=>{
@@ -771,6 +784,17 @@ input[type="number"]{font-size:22px}
   ["fDk","fDd"].forEach(id=>$(id).addEventListener("change",()=>{
     $("fDist").value=(+$("fDk").value+(+$("fDd").value)/10).toFixed(1);
     $("fDist").dispatchEvent(new Event("input",{bubbles:true}));}));
+  // 見出しの英字が幅からはみ出す端末では、収まるまで自動で縮小
+  function fitSubtitles(){
+    document.querySelectorAll(".sh").forEach(el=>{
+      el.style.removeProperty("--en-fs");
+      let fs=parseFloat(getComputedStyle(el,"::after").fontSize)||22, guard=0;
+      while(el.scrollWidth>el.clientWidth+1&&fs>11&&guard++<20){fs-=1;el.style.setProperty("--en-fs",fs+"px");}
+    });
+  }
+  window.addEventListener("resize",fitSubtitles);
+  if(document.fonts&&document.fonts.ready)document.fonts.ready.then(fitSubtitles);
+  document.querySelectorAll("details").forEach(d=>d.addEventListener("toggle",fitSubtitles));
   // init
   const today=new Date();$("fDate").value=`${today.getFullYear()}-${pad(today.getMonth()+1)}-${pad(today.getDate())}`;showDateWd();
   /* ---------- form defaults ---------- */
@@ -781,7 +805,7 @@ input[type="number"]{font-size:22px}
     $("fHr").value=DEF.hr;$("fHrMax").value=DEF.hrMax;$("fRace").checked=false;lastEdited="pace";
     updatePreview();schedWx();
   }
-  syncSettingsUI();syncLocUI();render();applyDefaults();
+  syncSettingsUI();syncLocUI();render();applyDefaults();fitSubtitles();
 })();
 </script>
 </body>
