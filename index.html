@@ -367,6 +367,8 @@ button.danger-btn.armed{background:#C0392B;border-color:#C0392B;color:#fff}
 .rcnote{font-size:clamp(9px,2.7vw,11.5px);color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 
 .racechk2 .check{flex:none;white-space:nowrap}
+
+.dlab{font-size:12px;font-weight:700;color:var(--ink);background:rgba(255,255,255,.1);border:1px solid var(--line);border-radius:4px;padding:0 5px;vertical-align:1px}
 </style>
 </head>
 <body>
@@ -504,18 +506,20 @@ button.danger-btn.armed{background:#C0392B;border-color:#C0392B;color:#fff}
     <div class="panel">
       <ul class="runs" id="races"></ul>
       <div class="g6 raceform">
-        <div class="c6"><label for="rName">大会名</label><input id="rName" type="text" placeholder="例:大阪マラソン2027"></div>
+        <div class="c6"><label for="rName">大会名</label><input id="rName" type="text" placeholder="例:大阪マラソン2027、びわ湖ハーフ"></div>
         <div class="c3"><label for="rDate">日付</label><div class="datebox"><span class="num" id="rDateTxt" aria-hidden="true"></span><input id="rDate" type="date"></div></div>
+        <div class="c3"><label id="lRD">距離(km)</label>
+          <div class="tsel" role="group" aria-labelledby="lRD"><select id="rDk" aria-label="km"></select><i>.</i><select id="rDd" aria-label="小数"></select></div></div>
         <div class="c3"><label id="lRT">タイム</label>
           <div class="tsel" role="group" aria-labelledby="lRT"><select id="rTh" aria-label="時間"></select><i>:</i><select id="rTm" aria-label="分"></select><i>:</i><select id="rTs" aria-label="秒"></select></div></div>
+        <div class="c3"><label id="lRS">スタート時刻</label>
+          <div class="tsel" role="group" aria-labelledby="lRS"><select id="rSh" aria-label="時"></select><i>:</i><select id="rSm" aria-label="分"></select></div></div>
         <div class="c6 grpbox"><label id="lRH">心拍(bpm)</label>
           <div class="hrpair" role="group" aria-labelledby="lRH">
             <div><span class="sub">平均</span><select id="rHr" class="nsel" aria-label="平均心拍"></select></div>
             <div><span class="sub">最大</span><select id="rHrMax" class="nsel" aria-label="最大心拍"></select></div>
           </div></div>
-        <div class="c3"><label id="lRS">スタート時刻</label>
-          <div class="tsel" role="group" aria-labelledby="lRS"><select id="rSh" aria-label="時"></select><i>:</i><select id="rSm" aria-label="分"></select></div></div>
-        <div class="c3 rwxbtn"><button type="button" class="sub-btn" id="rWxBtn">天気を取得</button></div>
+        <div class="c6 rwxbtn"><button type="button" class="sub-btn" id="rWxBtn">天気を取得</button></div>
         <div class="c6 hint" id="rWxMsg">大会名・日付・スタート時刻から、開催地の天候・気温・湿度を取得します。</div>
         <div class="c2"><label for="rTemp">気温(℃)</label><select id="rTemp" class="nsel"></select></div>
         <div class="c2"><label for="rHum">湿度(%)</label><select id="rHum" class="nsel"></select></div>
@@ -570,9 +574,11 @@ button.danger-btn.armed{background:#C0392B;border-color:#C0392B;color:#fff}
         <li>直近60日の記録を、新しいほど・距離が長いほど重く扱って平均します(予想欄の「練習データ(〇本)」はその本数)。</li>
         <li>記録一覧とグラフには、そのランを記録した時点のフルマラソン予想タイム(当日条件・補正・過去レースを含む)を保存して表示します。</li>
         <li>ランの最大心拍を入れると、①基礎情報の最大心拍より高い値が記録された場合はそちらを最大心拍として使い、②平均と最大の差が25拍を超える日(変化走・坂など心拍が大きく振れた日)は信頼度を下げて扱います。</li>
-        <li>VO2max(時計などの値)は高めに出やすいため、練習記録が1〜2本のときは2割、3本以上では1割の重みで組み合わせます。練習記録がないときはVO2maxだけで試算します。</li>
+        <li>心拍推定の個人補正:心拍から推定した実力(VDOT)が過去レースの実績より高い場合、その差を「心拍推定のクセ」とみなして一部を差し引きます(最新レースが新しいほど強く、最大12%)。全力で走った記録には適用しません。</li>
+        <li>VO2max(時計などの値)は高めに出やすいため、練習記録が1〜2本のときは1割の重みで組み合わせ、3本以上たまったら使いません。練習記録がないときはVO2maxで試算します。</li>
         <li>走り込み補正:平均月間走行距離が100km未満で+8%、100〜150kmで+5%、150〜200kmで+3%、200km以上で±0。直近6週間の最長距離による補正(最大4%)と合わせ、大きい方+小さい方の半分(上限10%)を上乗せします。</li>
         <li>過去のフルマラソンレース結果は、大会当日の気温・湿度・天候(レース中の時間帯の平均)で好条件のタイムに換算してから、新しいレースほど重く平均した「過去レース」のタイムとして、計算結果と組み合わせます。直近1年以内のレースがあれば5割、それより古いだけなら3割(練習記録がないときは7割)の重みです。レースの最大心拍は、最大心拍の更新にも使います。</li>
+        <li>過去レースはフル以外(ハーフ・10kmなど)も入力できます。フル以外はVDOTからフル相当タイムに換算し(走り込み補正の6割を上乗せ)、距離が短いほど重みを下げます。フルの結果がない場合は、過去レース全体の重みも7割に下げます。</li>
         <li>体重増減(直近レース比):直近の過去レースの時から体重が増えた・減った分を、過去レースのタイムに1kgあたり約0.9%で反映します(上限±8%)。</li>
                 <li>最後にレース当日の気温・湿度・天候を反映します。</li>
         <li>天候の自動判定:1時間あたり降水1mm以上または雨の天気コードで「雨」、0.2mm以上や霧雨で「小雨」、最大風速7m/s以上で「強風」。取得後に手で直すこともできます。</li>
@@ -634,36 +640,57 @@ button.danger-btn.armed{background:#C0392B;border-color:#C0392B;color:#fff}
     return a?{predMin:a.min,predVdot:a.vdot}:{predMin:null,predVdot:null};
   }
   // 過去レースの気象条件による補正(%):暑さ・湿度・天候。気象データが無ければ0
+  const raceDist=rc=>rc.dist>0?rc.dist:42.195;
+  function raceDistLabel(d){return Math.abs(d-42.195)<0.01?"フル":Math.abs(d-21.0975)<0.01?"ハーフ":`${(+d).toFixed(1)}km`;}
   function raceCond(rc){return rc.temp==null?0:heatPct(rc.temp,rc.hum)+wPct(rc.weather);}
   function aggregate(runs,s,nowTs){
     const now=nowTs||Date.now(), recent=runs.filter(r=>{const dd=(now-new Date(r.date))/864e5;return dd<=60&&dd>=-1;});
-    let sw=0,sv=0,n=0;
+    // (1) 過去レース:新しいレースほど重く(約10か月で重みが1/e)、気象条件を除いた好条件タイムで平均
+    // フル以外(ハーフ・10kmなど)はVDOTからフル相当タイムに換算し、距離が短いほど重みを下げる
+    const longestRun=Math.max(0,...runs.filter(r=>(now-new Date(r.date))/864e5<=42).map(r=>r.dist));
+    const mo0=s.monthly, vol0=(mo0==null)?0:(mo0<100?8:mo0<150?5:mo0<200?3:0);
+    const pen0=Math.min(10,Math.max(Math.max(0,(25-longestRun)/25)*4,vol0)+0.5*Math.min(Math.max(0,(25-longestRun)/25)*4,vol0));
+    let past=null,latestDays=null,hasFull=false;
+    {let sw2=0,st=0;for(const rc of (state.races||[])){if(!(rc.sec>0))continue;const dd=(now-new Date(rc.date))/864e5;if(dd<0)continue;
+      const d=raceDist(rc), tIdeal=(rc.sec/60)/(1+raceCond(rc)/100), full=Math.abs(d-42.195)<0.01;
+      const eq=full?tIdeal:marathonMin(vo2(d*1000/tIdeal)/frac(tIdeal))*(1+0.6*pen0/100);   // 全力レースなので走り込み補正は6割
+      const ww=Math.exp(-dd/300)*Math.sqrt(Math.min(1,d/42.195));if(full)hasFull=true;
+      sw2+=ww;st+=ww*eq;latestDays=latestDays==null?dd:Math.min(latestDays,dd);}
+     if(sw2>0)past=st/sw2;}
+    const wd=s.wDelta||0, wAdj=Math.max(-8,Math.min(8,wd*0.9));   // 直近レース時からの体重増減:1kgあたり約0.9%
+    if(past)past=past*(1+wAdj/100);
+    const raceV=past?vo2(42195/past)/frac(past):null;             // 過去レースから見た実力(VDOT)
+    // (2) 練習ラン:新しいほど・長いほど重く。心拍の振れが大きい日は重みを下げる
+    const items=[];
     for(const r of recent){const e=evalRun(r,s);if(!e.vdot)continue;
       const days=Math.max(0,(now-new Date(r.date))/864e5);
-      const vary=(!r.race&&r.hrMax&&r.hr&&r.hrMax-r.hr>25)?0.6:1;   // 変化走・坂などで心拍が大きく振れた日は重みを下げる
-      const w=Math.exp(-days/21)*Math.sqrt(Math.min(1,r.dist/15))*vary;sw+=w;sv+=w*e.vdot;n++;}
-    const vRuns=n?sv/sw:null, vWatch=s.vo2>0?s.vo2:null;
-    if(!vRuns&&!vWatch)return null;
-    // VO2max(時計)の重み:記録1〜2本は2割、3本以上は1割、記録なしならVO2maxのみ
-    const wW=vRuns&&vWatch?(n>=3?0.1:0.2):0;
-    const vdot=vRuns&&vWatch?vRuns*(1-wW)+vWatch*wW:(vRuns||vWatch);
-    // 持久力の補正:直近6週間の最長距離と月間走行距離(大きい方+小さい方の半分、上限10%)
+      const vary=(!r.race&&r.hrMax&&r.hr&&r.hrMax-r.hr>25)?0.6:1;
+      items.push({v:e.vdot,hrBased:!r.race,w:Math.exp(-days/21)*Math.sqrt(Math.min(1,r.dist/15))*vary});}
+    // (3) 心拍推定の個人補正:心拍から推定した実力が過去レースの実力より高い場合、その差の一部を差し引く
+    let cal=1;
+    {const hb=items.filter(x=>x.hrBased);
+     if(raceV&&hb.length){const vHR=hb.reduce((a,x)=>a+x.w*x.v,0)/hb.reduce((a,x)=>a+x.w,0);
+       if(vHR>raceV){const gap=1-raceV/vHR, trust=0.8*Math.exp(-latestDays/730);cal=1-Math.min(0.12,gap*trust);}}}
+    let sw=0,sv=0;for(const x of items){const v=x.hrBased?x.v*cal:x.v;sw+=x.w;sv+=x.w*v;}
+    const n=items.length, vRuns=n?sv/sw:null, vWatch=s.vo2>0?s.vo2:null;
+    if(!vRuns&&!vWatch&&!past)return null;
+    // (4) 時計のVO2max:記録1〜2本は1割、3本以上は使わない。記録なしならVO2maxのみ
+    const wW=vRuns&&vWatch?(n>=3?0:0.1):0;
+    const vdot=vRuns&&vWatch?vRuns*(1-wW)+vWatch*wW:(vRuns||vWatch||raceV);
+    // (5) 持久力の補正:直近6週間の最長距離と月間走行距離(大きい方+小さい方の半分、上限10%)
     const longest=Math.max(0,...runs.filter(r=>(now-new Date(r.date))/864e5<=42).map(r=>r.dist));
     const endur=Math.max(0,(25-longest)/25)*4;
     const mo=s.monthly, vol=(mo==null)?0:(mo<100?8:mo<150?5:mo<200?3:0);
     const pen=Math.min(10,Math.max(endur,vol)+0.5*Math.min(endur,vol));
     const race=heatPct(s.raceTemp,s.raceHum)+wPct(s.raceWeather);
     let ideal=marathonMin(vdot)*(1+pen/100);
-    // 過去のフルマラソンレース結果:新しいレースほど重く(約10か月で重みが1/e)平均し、計算結果と組み合わせる
-    let past=null,wP=0,latestDays=null;
-    {let sw2=0,st=0;for(const rc of (state.races||[])){if(!(rc.sec>0))continue;const dd0=(now-new Date(rc.date))/864e5;if(dd0<0)continue;const dd=dd0;
-      const ww=Math.exp(-dd/300);sw2+=ww;const rcf=raceCond(rc);st+=ww*(rc.sec/60)/(1+rcf/100);latestDays=latestDays==null?dd:Math.min(latestDays,dd);}
-     if(sw2>0){past=st/sw2;wP=!vRuns?0.7:(latestDays<=365?0.5:0.3);}}
-    const wd=s.wDelta||0, wAdj=Math.max(-8,Math.min(8,wd*0.9));   // 直近レース時からの体重増減:1kgあたり約0.9%
-    if(past){past=past*(1+wAdj/100);ideal=ideal*(1-wP)+past*wP;}
+    // (6) 過去レースと組み合わせる:直近1年以内なら5割、それより古いだけなら3割、練習記録なしなら7割
+    const wP=past?(!vRuns?0.7:(latestDays<=365?0.5:0.3))*(hasFull?1:0.7):0;
+    if(past)ideal=ideal*(1-wP)+past*wP;
     const t=ideal*(1+race/100);
-    return {min:t,vdot,vRuns,vWatch,wW,n,longest,endur,vol,pen,past,wP,race,wAdj:past?wAdj:0};
+    return {min:t,vdot,vRuns,vWatch,wW,n,longest,endur,vol,pen,past,wP,race,wAdj:past?wAdj:0,calPct:(1-cal)*100};
   }
+
 
   /* ---------- formatting ---------- */
   const pad=n=>String(n).padStart(2,"0");
@@ -771,7 +798,8 @@ button.danger-btn.armed{background:#C0392B;border-color:#C0392B;color:#fff}
       $("bigPace").innerHTML=`平均ペース <span class="num">${ms(agg.min*60/42.195)}</span>/km`;
       const meta=[`VDOT <b class="num">${agg.vdot.toFixed(1)}</b>`,
         agg.vRuns?`練習データ <b class="num">${agg.vRuns.toFixed(1)}</b>(${agg.n}本)`:`練習データ <b>なし</b>`,
-        agg.vWatch?`VO2max <b class="num">${agg.vWatch}</b>${agg.vRuns?`(${Math.round(agg.wW*100)}%)`:""}`:null].filter(Boolean);
+        agg.vWatch?`VO2max <b class="num">${agg.vWatch}</b>${agg.vRuns?(agg.wW>0?`(${Math.round(agg.wW*100)}%)`:"(未使用)"):""}`:null].filter(Boolean);
+      if(agg.calPct>0.05)meta.push(`心拍補正 <b>-${agg.calPct.toFixed(1)}%</b>`);
       if(agg.pen>0.05)meta.push(`走り込み補正 <b>+${agg.pen.toFixed(1)}%</b>`);
       if(Math.abs(agg.wAdj)>0.05)meta.push(`体重補正 <b>${agg.wAdj>0?"+":""}${agg.wAdj.toFixed(1)}%</b>`);
       if(agg.past)meta.push(`過去レース <b class="num">${hms(agg.past*60)}</b>(${Math.round(agg.wP*100)}%)`);
@@ -822,8 +850,8 @@ button.danger-btn.armed{background:#C0392B;border-color:#C0392B;color:#fff}
     const ul=$("races"); if(!ul)return;
     const rs=[...(state.races||[])].sort((a,b)=>b.date.localeCompare(a.date));
     if(!rs.length){ul.innerHTML='<li class="empty" style="display:block">レース結果がありません。</li>';return;}
-    ul.innerHTML=rs.map(r=>{const v=vo2(42195/(r.sec/60))/frac(r.sec/60);
-      return `<li><div><div class="rname"><span class="rlogo"><svg class="medal" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h10v5a5 5 0 0 1-10 0z" fill="#F2C230" stroke="#C99A14" stroke-width="1"/><path d="M7 5H4v1.5A3.5 3.5 0 0 0 7.6 10M17 5h3v1.5A3.5 3.5 0 0 1 16.4 10" fill="none" stroke="#C99A14" stroke-width="1.4"/><path d="M10.5 13h3l.6 4h-4.2z" fill="#E0AE1F"/><rect x="7.5" y="17" width="9" height="3.2" rx=".8" fill="#C99A14"/><path d="M9.5 5.2v3" stroke="#FFF3C4" stroke-width="1.2" stroke-linecap="round" opacity=".8"/></svg>${raceImg(r)?`<img class="rimg" src="${raceImg(r)}" alt="" hidden onload="this.hidden=false;this.previousElementSibling.style.display='none'" onerror="this.remove()">`:""}</span>${esc(r.name||"")}</div><div class="top">${fmtDate(r.date)} <span class="num">${hms(r.sec)}</span>(<span class="num">${ms(r.sec/42.195)}</span>/km)</div>
+    ul.innerHTML=rs.map(r=>{const dm=raceDist(r)*1000,v=vo2(dm/(r.sec/60))/frac(r.sec/60);
+      return `<li><div><div class="rname"><span class="rlogo"><svg class="medal" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h10v5a5 5 0 0 1-10 0z" fill="#F2C230" stroke="#C99A14" stroke-width="1"/><path d="M7 5H4v1.5A3.5 3.5 0 0 0 7.6 10M17 5h3v1.5A3.5 3.5 0 0 1 16.4 10" fill="none" stroke="#C99A14" stroke-width="1.4"/><path d="M10.5 13h3l.6 4h-4.2z" fill="#E0AE1F"/><rect x="7.5" y="17" width="9" height="3.2" rx=".8" fill="#C99A14"/><path d="M9.5 5.2v3" stroke="#FFF3C4" stroke-width="1.2" stroke-linecap="round" opacity=".8"/></svg>${raceImg(r)?`<img class="rimg" src="${raceImg(r)}" alt="" hidden onload="this.hidden=false;this.previousElementSibling.style.display='none'" onerror="this.remove()">`:""}</span>${esc(r.name||"")}</div><div class="top">${fmtDate(r.date)} <span class="dlab">${raceDistLabel(raceDist(r))}</span> <span class="num">${hms(r.sec)}</span>(<span class="num">${ms(r.sec/raceDist(r))}</span>/km)</div>
         <div class="cond">${esc(raceCondText(r))}</div></div>
         <div class="pred"><small>VDOT ${v.toFixed(1)}</small></div>
         <button class="del rdel" data-id="${esc(r.id)}" aria-label="${esc(r.date)}のレース結果を削除">削除</button></li>`;}).join("");
@@ -1001,7 +1029,7 @@ button.danger-btn.armed{background:#C0392B;border-color:#C0392B;color:#fff}
   if(document.fonts&&document.fonts.ready)document.fonts.ready.then(fitSubtitles);
   document.querySelectorAll("details").forEach(d=>d.addEventListener("toggle",fitSubtitles));
   // race form (追加)
-  fillSel($("rTh"),2,7,"--");
+  fillSel($("rTh"),0,7,"--");
   $("rTm").innerHTML='<option value="">--</option>'+Array.from({length:60},(_,i)=>`<option value="${i}">${pad(i)}</option>`).join("");
   $("rTs").innerHTML='<option value="">--</option>'+Array.from({length:60},(_,i)=>`<option value="${i}">${pad(i)}</option>`).join("");
   fillSel($("rHr"),100,220,"--");fillSel($("rHrMax"),100,230,"--");fillSel($("rTemp"),-10,40,"--");fillSel($("rHum"),0,100,"--");
@@ -1033,7 +1061,11 @@ button.danger-btn.armed{background:#C0392B;border-color:#C0392B;color:#fff}
     }catch(e){msg.textContent=wxErrorText(e);}
   });
   // 過去レース入力の初期値:4時間ちょうど、心拍 平均160・最大180
-  function setRaceFormDefaults(){$("rTh").value=4;$("rTm").value=0;$("rTs").value=0;$("rHr").value=160;$("rHrMax").value=180;}
+  $("rDk").innerHTML=Array.from({length:100},(_,i)=>`<option value="${i+1}">${i+1}</option>`).join("");
+  $("rDd").innerHTML=Array.from({length:10},(_,i)=>`<option value="${i}">${i}</option>`).join("");
+  // フル(42.2)・ハーフ(21.1)は正式距離として扱う
+  function snapDist(d){if(Math.abs(d-42.195)<0.06)return 42.195;if(Math.abs(d-21.0975)<0.06)return 21.0975;return d;}
+  function setRaceFormDefaults(){$("rDk").value=42;$("rDd").value=2;$("rTh").value=4;$("rTm").value=0;$("rTs").value=0;$("rHr").value=160;$("rHrMax").value=180;}
   setRaceFormDefaults();
   function showRDate(){const v=$("rDate").value;$("rDateTxt").innerHTML=v?fmtDate(v):"日付を選択";}
   $("rDate").addEventListener("input",showRDate);$("rDate").addEventListener("change",showRDate);showRDate();
@@ -1046,7 +1078,8 @@ button.danger-btn.armed{background:#C0392B;border-color:#C0392B;color:#fff}
     const sec=+hh*3600+(sv("rTm")||0)*60+(sv("rTs")||0), hr=sv("rHr"), hrMax=sv("rHrMax");
     if(hr&&hrMax&&hrMax<hr){err.textContent="最大心拍が平均心拍より低くなっています。";return;}
     err.textContent="";
-    const rc={id:"r"+Date.now().toString(36),name,date,sec,hr,hrMax};
+    const dist=snapDist(+$("rDk").value+(+$("rDd").value)/10);
+    const rc={id:"r"+Date.now().toString(36),name,date,dist,sec,hr,hrMax};
     const t=sv("rTemp"),hu=sv("rHum"),w=$("rWeather").value;
     if(t!=null){rc.temp=t;rc.hum=hu;rc.weather=w||"cloudy";rc.wxSrc=rWxFetched?"Open-Meteo":"手入力";}
     else if(w){rc.weather=w;rc.wxSrc="手入力";}
