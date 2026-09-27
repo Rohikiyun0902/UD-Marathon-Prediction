@@ -359,6 +359,14 @@ button.danger-btn.armed{background:#C0392B;border-color:#C0392B;color:#fff}
 #runs .cond{line-height:1.35;font-size:12px}
 #runs .pred .num{font-size:26px}
 #runs .pred small{font-size:11px}
+
+.race{grid-template-columns:minmax(0,1.3fr) minmax(0,.9fr) minmax(0,1.1fr) auto!important}
+.race label{white-space:nowrap;font-size:clamp(10.5px,3vw,11.5px)}
+
+.racechk2{align-items:center;gap:8px;min-width:0}
+.rcnote{font-size:clamp(9px,2.7vw,11.5px);color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+
+.racechk2 .check{flex:none;white-space:nowrap}
 </style>
 </head>
 <body>
@@ -429,7 +437,7 @@ button.danger-btn.armed{background:#C0392B;border-color:#C0392B;color:#fff}
               <option value="3.5">坂多め</option>
             </select></div>
         </div>
-        <div class="c6 racechk2"><label class="check"><input id="fRace" type="checkbox"><span>全力で走った</span></label></div>
+        <div class="c6 racechk2"><label class="check"><input id="fRace" type="checkbox"><span>全力で走った</span></label><span class="rcnote">※レース等の時のみ。タイムで実力評価</span></div>
       </div>
       <div class="preview" id="preview" hidden></div>
       <div class="err" id="formErr"></div>
@@ -448,9 +456,9 @@ button.danger-btn.armed{background:#C0392B;border-color:#C0392B;color:#fff}
       <div class="cr"><div class="meta" id="bigMeta"></div></div>
     </div>
     <div class="race">
-      <div><label for="raceTemp">当日の気温(℃)</label><select id="raceTemp" class="nsel"></select></div>
+      <div><label for="raceTemp">当日予想気温(℃)</label><select id="raceTemp" class="nsel"></select></div>
       <div><label for="raceHum">湿度(%)</label><select id="raceHum" class="nsel"></select></div>
-      <div class="w"><label for="raceWeather">当日の天候</label>
+      <div class="w"><label for="raceWeather">天候</label>
         <select id="raceWeather"></select></div>
       <div class="rreset"><button type="button" id="raceReset" aria-label="当日の気温・湿度・天候を初期値に戻す">初期値<br>に戻す</button></div>
       <div class="racenote">初期値:びわ湖マラソン2026(3/8)公式の気象(スタート〜ゴール平均)<br>出場予定大会の予想気温等を入力すると、次回以降も記憶します。</div>
@@ -464,8 +472,10 @@ button.danger-btn.armed{background:#C0392B;border-color:#C0392B;color:#fff}
   </section>
 
   <section>
-    <h2 class="sh" data-en="RUN LOG">記録一覧</h2>
+    <details class="backup" open>
+      <summary class="sh" data-en="RUN LOG">記録一覧</summary>
     <div class="panel"><ul class="runs" id="runs"></ul></div>
+    </details>
   </section>
 
   <section>
@@ -555,6 +565,7 @@ button.danger-btn.armed{background:#C0392B;border-color:#C0392B;color:#fff}
       <summary class="sh" data-en="METHOD">試算の考え方</summary>
       <ul>
         <li>練習ランは、ペースから求めた酸素摂取量と「心拍予備率(平均心拍が安静時〜最大のどこにあるか)」から最大酸素摂取量(VDOT)を推定します。全力走はタイムから直接VDOTを算出します(ジャック・ダニエルズ式)。</li>
+        <li>「全力で走った」のチェック:<b>なし</b>(通常の練習)は、ペースと平均心拍から余力を推定して実力を逆算します。平均心拍の入力が必要です。<b>あり</b>(レース・タイムトライアル)は、心拍を使わず「その距離をそのタイムで走り切れる実力」として評価します。心拍の入力は不要で、心拍の振れ幅による信頼度の補正もかけません。余力のある練習でチェックすると実力を低く見積もり、予想タイムが遅くなるため、本当に全力で走った日だけチェックしてください。</li>
         <li>気温・湿度・天候・起伏の影響を差し引き、「好条件で走った場合」のペースに換算してから計算します。暑い日の練習でも正当に評価されます。</li>
         <li>直近60日の記録を、新しいほど・距離が長いほど重く扱って平均します(予想欄の「練習データ(〇本)」はその本数)。</li>
         <li>記録一覧とグラフには、そのランを記録した時点のフルマラソン予想タイム(当日条件・補正・過去レースを含む)を保存して表示します。</li>
