@@ -106,6 +106,43 @@ details.backup .panel{margin-top:8px}
 .btns{display:flex;flex-wrap:wrap;gap:8px}
 @media (max-width:420px){.grid{grid-template-columns:1fr 1fr;gap:10px}.race{grid-template-columns:1fr 1fr}.race .w{grid-column:1/-1}}
 @media (prefers-reduced-motion:no-preference){.clock .time{transition:color .3s}}
+
+/* ---- compact layout ---- */
+section{margin-top:16px}
+h2{font-size:16px;margin:0 0 6px}
+.panel{padding:12px}
+label{font-size:12px;margin-bottom:2px;line-height:1.4}
+input,select{padding:6px 8px;font-size:16px}
+input[type="number"],input[type="date"]{font-size:17px}
+.g6{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}
+.g4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.c2{grid-column:span 2}.c3{grid-column:span 3}.c6{grid-column:1/-1}
+.hint{font-size:11.5px;line-height:1.5;margin-top:4px}
+.hint.tight{margin-top:-4px}
+.tsel{display:flex;align-items:center;gap:2px}
+.tsel select{flex:1;min-width:0;-webkit-appearance:none;appearance:none;text-align:center;text-align-last:center;padding:6px 2px;font-family:"Barlow Condensed","Arial Narrow",sans-serif;font-weight:700;font-size:18px}
+.grpbox{border:1.5px solid #6FA88D;border-radius:8px;padding:4px 6px 6px;background:rgba(255,255,255,.04)}
+.grpbox label{color:var(--ink);font-weight:700}
+.grpbox .tsel select{padding:5px 1px;font-size:17px}
+.tsel i{font-style:normal;font-weight:700;color:var(--sub)}
+.datebox{padding:6px 8px;min-height:40px;font-size:17px}
+.wx{padding:7px 10px;font-size:12px;line-height:1.5}
+.wx button{padding:5px 10px;font-size:12px}
+.check{font-size:13.5px;gap:6px;margin:2px 0 0}
+.check input{width:18px;height:18px}
+.check .hint{margin:0 0 0 4px}
+.locbtns{display:flex;gap:4px;align-items:flex-end}
+.locbtns button{flex:1;padding:7px 2px;font-size:12px}
+.preview{margin-top:8px;font-size:13px}
+.err{margin-top:4px}
+button.primary{padding:10px}
+.clock{padding:14px}
+input,select,.datebox{min-height:40px}
+.race{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:8px;margin-top:10px;padding-top:10px}
+.race .w{grid-column:auto!important}
+.clock .meta{margin-top:8px;gap:2px 14px}
+.clock .time{font-size:clamp(52px,15vw,88px)}
+.runs li{padding:8px 0}
 </style>
 </head>
 <body>
@@ -115,40 +152,35 @@ details.backup .panel{margin-top:8px}
   <section>
     <h2>今日のランを記録</h2>
     <div class="panel">
-      <div class="grid">
-        <div><label for="fDate">日付</label><div class="datebox"><span class="num" id="fDateTxt" aria-hidden="true"></span><input id="fDate" type="date"></div></div>
-        <div><label id="lStart">走り始めた時刻</label>
-          <div class="sel3" role="group" aria-labelledby="lStart">
-            <select id="fSh" aria-label="時"></select><span>時</span>
-            <select id="fSm" aria-label="分"></select><span>分</span>
+      <div class="g6">
+        <div class="c3"><label for="fDate">日付</label><div class="datebox"><span class="num" id="fDateTxt" aria-hidden="true"></span><input id="fDate" type="date"></div></div>
+        <div class="c3"><label id="lStart">走り始め</label>
+          <div class="tsel" role="group" aria-labelledby="lStart">
+            <select id="fSh" aria-label="時"></select><i>:</i><select id="fSm" aria-label="分"></select>
           </div></div>
-        <div><label for="fDist">距離(km)</label><input id="fDist" type="number" inputmode="decimal" step="0.01" placeholder="10"></div>
-        <div class="full"><label id="lTime">タイム</label>
-          <div class="sel3" role="group" aria-labelledby="lTime">
-            <select id="fTh" aria-label="時間"></select><span>時間</span>
-            <select id="fTm" aria-label="分"></select><span>分</span>
-            <select id="fTs" aria-label="秒"></select><span>秒</span>
-          </div></div>
-        <div class="full"><label id="lPace">平均ペース(1kmあたり)</label>
-          <div class="sel3" role="group" aria-labelledby="lPace">
-            <select id="fPm" aria-label="分"></select><span>分</span>
-            <select id="fPs" aria-label="秒"></select><span>秒</span>
-          </div>
-          <div class="hint">タイムかペースの片方を選べば、もう一方は自動で入ります</div></div>
-        <div><label for="fHr">平均心拍(bpm)</label><input id="fHr" type="number" inputmode="numeric" placeholder="150"></div>
-        <div class="full wx" id="wxBox"><span id="wxStatus">日付と走り始めた時刻を選ぶと、<b id="wxPlace"></b>の気温・湿度・天候を自動で入れます。</span>
-          <button type="button" id="wxBtn">天気を取得</button></div>
-        <div><label for="fTemp">気温(℃)</label><input id="fTemp" type="number" inputmode="decimal" step="0.5" placeholder="18"></div>
-        <div><label for="fHum">湿度(%)</label><input id="fHum" type="number" inputmode="numeric" placeholder="60"></div>
-        <div><label for="fWeather">天候</label><select id="fWeather"></select></div>
-        <div class="full"><label for="fCourse">コース</label>
+        <div class="c2"><label for="fDist">距離(km)</label><input id="fDist" type="number" inputmode="decimal" step="0.01" placeholder="10"></div>
+        <div class="c2"><label for="fHr">平均心拍</label><input id="fHr" type="number" inputmode="numeric" placeholder="150"></div>
+        <div class="c2"><label for="fCourse">コース</label>
           <select id="fCourse">
             <option value="0">平坦</option>
-            <option value="1.5">ややアップダウン</option>
-            <option value="3.5">坂が多い</option>
+            <option value="1.5">起伏あり</option>
+            <option value="3.5">坂多め</option>
           </select></div>
-        <div class="full"><label class="check"><input id="fRace" type="checkbox"> 全力で走った(レース・タイムトライアル)</label>
-          <div class="hint">全力走は走力をそのまま反映します。普段の練習は心拍から余力を推定します。</div></div>
+        <div class="c3 grpbox"><label id="lTime">タイム</label>
+          <div class="tsel" role="group" aria-labelledby="lTime">
+            <select id="fTh" aria-label="時間"></select><i>:</i><select id="fTm" aria-label="分"></select><i>:</i><select id="fTs" aria-label="秒"></select>
+          </div></div>
+        <div class="c3 grpbox"><label id="lPace">ペース(/km)</label>
+          <div class="tsel" role="group" aria-labelledby="lPace">
+            <select id="fPm" aria-label="分"></select><i>:</i><select id="fPs" aria-label="秒"></select>
+          </div></div>
+        <div class="c6 hint tight">タイムかペースの片方を選ぶと、もう一方は自動で入ります</div>
+        <div class="c6 wx" id="wxBox"><span id="wxStatus">日付と走り始めた時刻を選ぶと、<b id="wxPlace"></b>の気温・湿度・天候を自動で入れます。</span>
+          <button type="button" id="wxBtn">天気を取得</button></div>
+        <div class="c2"><label for="fTemp">気温(℃)</label><input id="fTemp" type="number" inputmode="decimal" step="0.5" placeholder="18"></div>
+        <div class="c2"><label for="fHum">湿度(%)</label><input id="fHum" type="number" inputmode="numeric" placeholder="60"></div>
+        <div class="c2"><label for="fWeather">天候</label><select id="fWeather"></select></div>
+        <div class="c6"><label class="check"><input id="fRace" type="checkbox"> 全力で走った(レース・TT)<span class="hint">心拍なしでも試算</span></label></div>
       </div>
       <div class="preview" id="preview"></div>
       <div class="err" id="formErr"></div>
@@ -186,25 +218,26 @@ details.backup .panel{margin-top:8px}
   <section>
     <h2>あなたの基礎情報</h2>
     <div class="panel">
-      <div class="grid">
-        <div><label for="sAge">年齢</label><input id="sAge" type="number" inputmode="numeric" placeholder="50"></div>
-        <div><label for="sRest">安静時心拍</label><input id="sRest" type="number" inputmode="numeric" placeholder="60"><div class="hint">朝起きてすぐの値</div></div>
-        <div class="full"><label for="sMax">最大心拍(わかれば)</label><input id="sMax" type="number" inputmode="numeric" placeholder="空欄なら年齢から推定"><div class="hint" id="maxHint"></div></div>
-        <div class="full"><label for="sVo2">今のVO2max(時計などの値)</label><input id="sVo2" type="number" inputmode="decimal" step="0.1" placeholder="空欄なら使わない"><div class="hint">練習データからの推定と組み合わせて予想タイムに反映します。</div></div>
+      <div class="g4">
+        <div><label for="sAge">年齢</label><input id="sAge" type="number" inputmode="numeric" placeholder="47"></div>
+        <div><label for="sRest">安静時心拍</label><input id="sRest" type="number" inputmode="numeric" placeholder="60"></div>
+        <div><label for="sMax">最大心拍</label><input id="sMax" type="number" inputmode="numeric" placeholder="推定"></div>
+        <div><label for="sVo2">VO2max</label><input id="sVo2" type="number" inputmode="decimal" step="0.1" placeholder="なし"></div>
       </div>
+      <div class="hint">安静時心拍は起床直後の値。最大心拍が空欄なら年齢から推定します。<span id="maxHint"></span> VO2maxは時計などの値で、練習データと組み合わせて予想に反映します。</div>
     </div>
   </section>
 
   <section>
     <h2>走る場所</h2>
     <div class="panel">
-      <div class="grid">
-        <div class="full"><label for="sLocName">地点名</label><input id="sLocName" type="text"></div>
-        <div><label for="sLat">緯度</label><input id="sLat" type="number" inputmode="decimal" step="0.0001"></div>
-        <div><label for="sLng">経度</label><input id="sLng" type="number" inputmode="decimal" step="0.0001"></div>
-        <div class="full btns"><button type="button" id="geoBtn">現在地を使う</button><button type="button" id="homeBtn">唐橋町に戻す</button></div>
+      <div class="g6">
+        <div class="c6"><label for="sLocName">地点名</label><input id="sLocName" type="text"></div>
+        <div class="c2"><label for="sLat">緯度</label><input id="sLat" type="number" inputmode="decimal" step="0.0001"></div>
+        <div class="c2"><label for="sLng">経度</label><input id="sLng" type="number" inputmode="decimal" step="0.0001"></div>
+        <div class="c2 locbtns"><button type="button" id="geoBtn">現在地</button><button type="button" id="homeBtn">唐橋町</button></div>
       </div>
-      <div class="hint">天気は Open-Meteo(気象庁などの観測・解析データ)から1時間ごとの値を取得し、走っていた時間帯で平均します。</div>
+      <div class="hint">天気は Open-Meteo(気象庁などのデータ)の1時間ごとの値を、走っていた時間帯で平均します。</div>
     </div>
   </section>
 
@@ -377,7 +410,7 @@ details.backup .panel{margin-top:8px}
 
   function render(){
     const s=state.settings, mx=maxHr(s);
-    $("maxHint").textContent=!s.max&&s.age?`推定値 ${mx} bpm を使用中`:"";
+    $("maxHint").textContent=!s.max&&s.age?`(現在 推定${mx})`:"";
     const agg=aggregate(state.runs,s);
     if(agg){
       $("bigTime").textContent=hms(agg.min*60);
