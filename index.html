@@ -165,13 +165,20 @@ input,select,.datebox{min-height:42px}
 h1 .ttl{white-space:nowrap;font-size:clamp(16px,4.6vw,24px)}
 h1{padding:8px 12px 14px}
 .runner{width:clamp(58px,17vw,110px)}
+
+/* 自分で用意した画像(runner.png / runner.jpg)があれば、それを表示 */
+.runner-wrap{flex:none;display:flex;align-items:center}
+.runner-img{width:clamp(58px,17vw,110px);height:auto;display:block} /* 置いた画像をそのまま表示 */
+.runner-wrap.has-img svg{display:none}
 </style>
 </head>
 <body>
 <div class="wrap">
   <header class="hero">
     <h1><span class="kick">FULL MARATHON · 42.195km</span><span class="ttl">フルマラソン予想タイム試算</span></h1>
-    <svg class="runner" viewBox="0 0 100 110" role="img" aria-label="右向きに走る人のイラスト">
+    <span class="runner-wrap">
+      <img id="runImg" class="runner-img" alt="走る人のイラスト" hidden>
+      <svg class="runner" viewBox="0 0 100 110" role="img" aria-label="右向きに走る人のイラスト">
     <g fill="currentColor" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
       <circle cx="61" cy="14.5" r="6.6" stroke="none"/>
       <path d="M54.2 13 C54 6.5 58.5 3.8 62.5 4.2 C66.5 4.6 68.6 7.6 68.8 10.6 L77 12 L76.4 13.6 L67.4 13.4 Z" stroke-width="1"/>
@@ -192,6 +199,7 @@ h1{padding:8px 12px 14px}
       <path d="M8 40 H30"/><path d="M4 55 H26"/><path d="M10 70 H30"/>
     </g>
 </svg>
+    </span>
   </header>
 
   <section>
@@ -640,6 +648,11 @@ h1{padding:8px 12px 14px}
   };
   function showDateWd(){const v=$("fDate").value;$("fDateTxt").innerHTML=v?fmtDate(v):"日付を選択";}
   $("fDate").addEventListener("input",showDateWd);$("fDate").addEventListener("change",showDateWd);
+  // 右上イラスト:同じフォルダの runner_orange.png → runner.png → runner.jpg の順に探し、無ければ内蔵イラスト
+  (function(){const img=$("runImg");const list=["runner_orange.png","runner.png","runner.jpg"];let i=0;
+    img.onload=()=>{img.hidden=false;img.parentNode.classList.add("has-img");};
+    img.onerror=()=>{i++;if(i<list.length)img.src=list[i];};
+    img.src=list[0];})();
   // init
   const today=new Date();$("fDate").value=`${today.getFullYear()}-${pad(today.getMonth()+1)}-${pad(today.getDate())}`;showDateWd();
   /* ---------- form defaults ---------- */
