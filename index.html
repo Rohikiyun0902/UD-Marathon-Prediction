@@ -288,6 +288,19 @@ button.sub-btn:active{transform:translateY(1px)}
 .rlogo{display:inline-flex;align-items:center;flex:none}
 .rimg{height:26px;width:auto;max-width:40px;object-fit:contain}
 .rimg[hidden]{display:none!important}
+
+/* 過去レース:削除ボタンを右列に収めて縦幅を圧縮 */
+#races li{grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto auto;gap:0 10px;padding:6px 0;align-items:start}
+#races li>div:first-child{grid-row:1/3}
+#races .pred{grid-column:2;grid-row:1}
+#races .del{grid-column:2;grid-row:2;align-self:end;margin-top:4px}
+#races .top{line-height:1.35;margin:1px 0}
+#races .rname{line-height:1.3}
+#races .cond{line-height:1.3}
+
+/* 大会ロゴ(画像・メダル)を約1.2倍に */
+.rimg{height:31px;max-width:48px}
+.rname .medal{width:24px;height:24px}
 </style>
 </head>
 <body>
