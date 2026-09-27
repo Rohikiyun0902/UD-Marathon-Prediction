@@ -273,6 +273,17 @@ input[type="number"]{font-size:22px}
 /* 今日のラン:日付・走り始め時刻・気温・湿度・天候・コースの見出しも白の太字に */
 .g6>div:not(.grpbox)>label{font-weight:700;color:var(--ink)}
 .g6>div.racechk>label{font-weight:400}
+
+.prow{margin-top:8px;align-items:end}
+.prow>div:not(.grpbox){padding-bottom:7.5px}
+
+.raceform{margin-top:10px;padding-top:10px;border-top:1px dashed var(--line)}
+.raceform>div:not(.grpbox){padding-bottom:7.5px}
+.raceform{align-items:end}
+button.sub-btn{box-sizing:border-box;width:100%;margin-top:4px;padding:10px;font-weight:700;border-radius:10px;background:#26604A;border:1px solid #6FA88D;color:var(--ink)}
+button.sub-btn:active{transform:translateY(1px)}
+
+.rname{font-weight:700;font-size:15px;color:var(--title);letter-spacing:.04em}
 </style>
 </head>
 <body>
@@ -390,8 +401,20 @@ input[type="number"]{font-size:22px}
           </div></div>
         <div><label for="sVo2">VO2max</label><select id="sVo2" class="nsel"></select></div>
       </div>
-      <div class="hint oneline">安静時心拍は起床直後の値。最大心拍が空欄なら年齢から推定します。<span id="maxHint"></span><br>VO2maxは時計などの値で、練習データと組み合わせて予想に反映します。</div>
+      <div class="g6 prow">
+        <div class="c3"><label for="sMonthly">月間走行距離(km)</label><select id="sMonthly" class="nsel"></select></div>
+      </div>
+      <div class="hint oneline">安静時心拍は起床直後の値。最大心拍が空欄なら年齢から推定します。<span id="maxHint"></span><br>VO2maxは時計などの値で、練習データと組み合わせて予想に反映します。<br>月間走行距離が少ないほど、予想タイムを上乗せします。</div>
     </div>
+  </section>
+
+  <section>
+    <details class="backup">
+      <summary class="sh" data-en="RACES">過去のフルマラソンレース結果</summary>
+    <div class="panel">
+      <ul class="runs" id="races"></ul>
+    </div>
+    </details>
   </section>
 
   <section>
@@ -429,9 +452,10 @@ input[type="number"]{font-size:22px}
         <li>気温・湿度・天候・起伏の影響を差し引き、「好条件で走った場合」のペースに換算してから計算します。暑い日の練習でも正当に評価されます。</li>
         <li>直近60日の記録を、新しいほど・距離が長いほど重く扱って平均します(予想欄の「練習データ(〇本)」はその本数)。</li>
         <li>ランの最大心拍を入れると、①基礎情報の最大心拍より高い値が記録された場合はそちらを最大心拍として使い、②平均と最大の差が25拍を超える日(変化走・坂など心拍が大きく振れた日)は信頼度を下げて扱います。</li>
-        <li>VO2max(時計などの値)を入れている場合は、練習データからの推定7割・VO2max 3割で組み合わせます。練習記録がないときはVO2maxだけで試算します。</li>
-        <li>直近6週間の最長距離が25kmに満たない場合、後半の失速を見込んで最大4%程度タイムを上乗せします。</li>
-        <li>最後にレース当日の気温・湿度・天候を反映します。</li>
+        <li>VO2max(時計などの値)は高めに出やすいため、練習記録が1〜2本のときは2割、3本以上では1割の重みで組み合わせます。練習記録がないときはVO2maxだけで試算します。</li>
+        <li>走り込み補正:月間走行距離が100km未満で+8%、100〜150kmで+5%、150〜200kmで+3%、200km以上で±0。直近6週間の最長距離による補正(最大4%)と合わせ、大きい方+小さい方の半分(上限10%)を上乗せします。</li>
+        <li>過去のフルマラソンレース結果は、新しいレースほど重く平均した「過去レース」のタイムとして、計算結果と組み合わせます。直近1年以内のレースがあれば5割、それより古いだけなら3割(練習記録がないときは7割)の重みです。レースの最大心拍は、最大心拍の更新にも使います。</li>
+                <li>最後にレース当日の気温・湿度・天候を反映します。</li>
         <li>天候の自動判定:1時間あたり降水1mm以上または雨の天気コードで「雨」、0.2mm以上や霧雨で「小雨」、最大風速7m/s以上で「強風」。取得後に手で直すこともできます。</li>
       </ul>
       <p>あくまで目安です。心拍計の精度、体調、補給、30km以降の経験によって実際のタイムは前後します。最大心拍を実測値で入れると精度が上がります。</p>
@@ -462,7 +486,7 @@ input[type="number"]{font-size:22px}
   function baseMaxHr(s){return s.max>0?s.max:(s.age>0?Math.round(208-0.7*s.age):null);}
   function recordedMaxHr(){                                // 直近1年の記録で観測した最大心拍
     const now=Date.now();let m=0;
-    for(const r of (state.runs||[]))if(r.hrMax>0&&(now-new Date(r.date))/864e5<=365)m=Math.max(m,r.hrMax);
+    for(const r of [...(state.runs||[]),...(state.races||[])])if(r.hrMax>0&&(now-new Date(r.date))/864e5<=365)m=Math.max(m,r.hrMax);
     return m;
   }
   function maxHr(s){const b=baseMaxHr(s);if(!b)return null;return Math.max(b,recordedMaxHr());}
@@ -491,12 +515,24 @@ input[type="number"]{font-size:22px}
       const w=Math.exp(-days/21)*Math.sqrt(Math.min(1,r.dist/15))*vary;sw+=w;sv+=w*e.vdot;n++;}
     const vRuns=n?sv/sw:null, vWatch=s.vo2>0?s.vo2:null;
     if(!vRuns&&!vWatch)return null;
-    const vdot=vRuns&&vWatch?vRuns*0.7+vWatch*0.3:(vRuns||vWatch);
+    // VO2max(時計)の重み:記録1〜2本は2割、3本以上は1割、記録なしならVO2maxのみ
+    const wW=vRuns&&vWatch?(n>=3?0.1:0.2):0;
+    const vdot=vRuns&&vWatch?vRuns*(1-wW)+vWatch*wW:(vRuns||vWatch);
+    // 持久力の補正:直近6週間の最長距離と月間走行距離(大きい方+小さい方の半分、上限10%)
     const longest=Math.max(0,...runs.filter(r=>(now-new Date(r.date))/864e5<=42).map(r=>r.dist));
     const endur=Math.max(0,(25-longest)/25)*4;
+    const mo=s.monthly, vol=(mo==null)?0:(mo<100?8:mo<150?5:mo<200?3:0);
+    const pen=Math.min(10,Math.max(endur,vol)+0.5*Math.min(endur,vol));
     const race=heatPct(s.raceTemp,s.raceHum)+wPct(s.raceWeather);
-    const t=marathonMin(vdot)*(1+race/100)*(1+endur/100);
-    return {min:t,vdot,vRuns,vWatch,n,longest,endur,race};
+    let ideal=marathonMin(vdot)*(1+pen/100);
+    // 過去のフルマラソンレース結果:新しいレースほど重く(約10か月で重みが1/e)平均し、計算結果と組み合わせる
+    let past=null,wP=0,latestDays=null;
+    {let sw2=0,st=0;for(const rc of (state.races||[])){if(!(rc.sec>0))continue;const dd=Math.max(0,(now-new Date(rc.date))/864e5);
+      const ww=Math.exp(-dd/300);sw2+=ww;st+=ww*rc.sec/60;latestDays=latestDays==null?dd:Math.min(latestDays,dd);}
+     if(sw2>0){past=st/sw2;wP=!vRuns?0.7:(latestDays<=365?0.5:0.3);}}
+    if(past)ideal=ideal*(1-wP)+past*wP;
+    const t=ideal*(1+race/100);
+    return {min:t,vdot,vRuns,vWatch,wW,n,longest,endur,vol,pen,past,wP,race};
   }
 
   /* ---------- formatting ---------- */
@@ -524,25 +560,28 @@ input[type="number"]{font-size:22px}
 
   /* ---------- state & storage ---------- */
   const HOME={name:"滋賀県大津市唐橋町",lat:34.9906,lng:135.9072};
-  let state={runs:[],settings:{age:47,rest:60,max:181,vo2:53,raceTemp:5,raceHum:66,raceWeather:"cloudy",raceDefV:2,loc:{...HOME}}};
+  let state={runs:[],settings:{age:47,rest:60,max:181,vo2:53,monthly:90,monthlyDefV:1,raceTemp:5,raceHum:66,raceWeather:"cloudy",raceDefV:2,loc:{...HOME}}};
     const LS="marathon-predictor-v1";
   function loadLocal(){try{const j=localStorage.getItem(LS);if(j)return JSON.parse(j);}catch(e){}return null;}
   function save(){
     try{localStorage.setItem(LS,JSON.stringify(state));}catch(e){}
   }
-  const local=loadLocal(); if(local){state.runs=local.runs||[];Object.assign(state.settings,local.settings||{});if(!state.settings.loc)state.settings.loc={...HOME};const DS={age:47,rest:60,max:181};for(const k in DS)if(state.settings[k]==null)state.settings[k]=DS[k];if(state.settings.vo2===undefined)state.settings.vo2=53;if(!local.settings||local.settings.raceDefV!==2)Object.assign(state.settings,{raceTemp:5,raceHum:66,raceWeather:"cloudy",raceDefV:2});}
+  const DEFAULT_RACES=[{id:"r20260222",name:"大阪マラソン",date:"2026-02-22",sec:3*3600+27*60+5,hr:169,hrMax:180},{id:"r20250216",name:"京都マラソン",date:"2025-02-16",sec:3*3600+38*60+20,hr:166,hrMax:177}];
+  state.races=DEFAULT_RACES.map(r=>({...r}));
+  const local=loadLocal(); if(local){state.runs=local.runs||[];if(Array.isArray(local.races)){state.races=local.races;const NM={"2026-02-22":"大阪マラソン","2025-02-16":"京都マラソン"};state.races.forEach(r=>{if(!r.name&&NM[r.date])r.name=NM[r.date];});}Object.assign(state.settings,local.settings||{});if(!state.settings.loc)state.settings.loc={...HOME};const DS={age:47,rest:60,max:181};for(const k in DS)if(state.settings[k]==null)state.settings[k]=DS[k];if(state.settings.vo2===undefined)state.settings.vo2=53;if(!local.settings||local.settings.monthlyDefV!==1)Object.assign(state.settings,{monthly:90,monthlyDefV:1});if(!local.settings||local.settings.raceDefV!==2)Object.assign(state.settings,{raceTemp:5,raceHum:66,raceWeather:"cloudy",raceDefV:2});}
 
   /* ---------- UI ---------- */
   function syncSettingsUI(){
     const s=state.settings;
+    setSel($("sMonthly"),s.monthly);
     setSel($("sAge"),s.age);setSel($("sRest"),s.rest);setSel($("sMax"),s.max);setSel($("sVo2"),s.vo2);
     setSel($("raceTemp"),s.raceTemp);setSel($("raceHum"),s.raceHum);$("raceWeather").value=s.raceWeather||"cloudy";
   }
   function readSettings(){
     const n=id=>{const v=parseFloat($(id).value);return isNaN(v)?null:v;};
-    Object.assign(state.settings,{age:n("sAge"),rest:n("sRest"),max:n("sMax"),vo2:n("sVo2"),raceTemp:n("raceTemp"),raceHum:n("raceHum"),raceWeather:$("raceWeather").value});
+    Object.assign(state.settings,{monthly:n("sMonthly"),age:n("sAge"),rest:n("sRest"),max:n("sMax"),vo2:n("sVo2"),raceTemp:n("raceTemp"),raceHum:n("raceHum"),raceWeather:$("raceWeather").value});
   }
-  ["sAge","sRest","sMax","sVo2","raceTemp","raceHum","raceWeather"].forEach(id=>["input","change"].forEach(ev=>$(id).addEventListener(ev,()=>{readSettings();save();render();})));
+  ["sMonthly","sAge","sRest","sMax","sVo2","raceTemp","raceHum","raceWeather"].forEach(id=>["input","change"].forEach(ev=>$(id).addEventListener(ev,()=>{readSettings();save();render();})));
 
   // select boxes
   const opts=(a,b,unit)=>`<option value="">--</option>`+Array.from({length:b-a+1},(_,i)=>`<option value="${a+i}">${unit?pad(a+i):a+i}</option>`).join("");
@@ -600,8 +639,9 @@ input[type="number"]{font-size:22px}
       $("bigRange").innerHTML=`目安レンジ <span class="num">${hms(agg.min*60*0.97)}〜${hms(agg.min*60*1.04)}</span>`;
       const meta=[`平均ペース <b class="num">${ms(agg.min*60/42.195)}</b>/km`,`VDOT <b class="num">${agg.vdot.toFixed(1)}</b>`,
         agg.vRuns?`練習データ <b class="num">${agg.vRuns.toFixed(1)}</b>(${agg.n}本)`:`練習データ <b>なし</b>`,
-        agg.vWatch?`VO2max <b class="num">${agg.vWatch}</b>`:null].filter(Boolean);
-      if(agg.endur>0.05)meta.push(`長距離不足 <b>+${agg.endur.toFixed(1)}%</b>`);
+        agg.vWatch?`VO2max <b class="num">${agg.vWatch}</b>${agg.vRuns?`(${Math.round(agg.wW*100)}%)`:""}`:null].filter(Boolean);
+      if(agg.pen>0.05)meta.push(`走り込み補正 <b>+${agg.pen.toFixed(1)}%</b>`);
+      if(agg.past)meta.push(`過去レース <b class="num">${hms(agg.past*60)}</b>(${Math.round(agg.wP*100)}%)`);
       if(agg.race>0.05)meta.push(`当日条件 <b>+${agg.race.toFixed(1)}%</b>`);
       $("bigMeta").innerHTML=meta.map(m=>`<span>${m}</span>`).join("");
     }else{
@@ -630,9 +670,24 @@ input[type="number"]{font-size:22px}
       clearTimeout(b._t);
       state.runs=state.runs.filter(x=>String(x.id)!==b.dataset.id);save();render();
     }));
+    renderRaces();
     drawChart(s);
   }
 
+  function renderRaces(){
+    const ul=$("races"); if(!ul)return;
+    const rs=[...(state.races||[])].sort((a,b)=>b.date.localeCompare(a.date));
+    if(!rs.length){ul.innerHTML='<li class="empty" style="display:block">レース結果がありません。</li>';return;}
+    ul.innerHTML=rs.map(r=>{const v=vo2(42195/(r.sec/60))/frac(r.sec/60);
+      return `<li><div><div class="rname">${esc(r.name||"")}</div><div class="top">${fmtDate(r.date)} <span class="num">${hms(r.sec)}</span>(<span class="num">${ms(r.sec/42.195)}</span>/km)</div>
+        <div class="cond">${r.hr?`心拍${r.hr}${r.hrMax?`/最大${r.hrMax}`:""}`:""}</div></div>
+        <div class="pred"><small>VDOT ${v.toFixed(1)}</small></div>
+        <button class="del rdel" data-id="${esc(r.id)}" aria-label="${esc(r.date)}のレース結果を削除">削除</button></li>`;}).join("");
+    ul.querySelectorAll(".rdel").forEach(b=>b.addEventListener("click",()=>{
+      if(b.dataset.armed!=="1"){b.dataset.armed="1";b.textContent="もう一度押すと削除";b.classList.add("armed");
+        clearTimeout(b._t);b._t=setTimeout(()=>{b.dataset.armed="";b.textContent="削除";b.classList.remove("armed");},4000);return;}
+      clearTimeout(b._t);state.races=state.races.filter(x=>String(x.id)!==b.dataset.id);save();render();}));
+  }
   function drawChart(s){
     const pts=state.runs.map(r=>({r,e:evalRun(r,s)})).filter(p=>p.e.vdot).map(p=>({d:p.r.date,t:marathonMin(p.e.vdot)}));
     const box=$("chart");
@@ -760,6 +815,7 @@ input[type="number"]{font-size:22px}
     try{const d=JSON.parse(await f.text());if(!Array.isArray(d.runs))throw 0;
       const ids=new Set(state.runs.map(r=>r.id));let n=0;
       for(const r of d.runs){if(r&&r.date&&r.dist&&r.sec&&!ids.has(r.id)){state.runs.push(r);n++;}}
+      if(Array.isArray(d.races)){state.races=state.races||[];const rid=new Set(state.races.map(r=>r.id));for(const r of d.races){if(r&&r.date&&r.sec&&!rid.has(r.id))state.races.push(r);}}
       state.runs.sort((a,b)=>a.date<b.date?-1:1);
       if(d.settings)Object.assign(state.settings,d.settings,{loc:d.settings.loc||state.settings.loc});
       save();syncSettingsUI();syncLocUI();render();$("bkMsg").textContent=`${n}件を読み込みました。`;
@@ -776,6 +832,7 @@ input[type="number"]{font-size:22px}
   // lists
   fillSel($("fTemp"),-10,40,"--");fillSel($("fHum"),0,100,"--");fillSel($("raceTemp"),-10,40,"--");fillSel($("raceHum"),0,100,"--");
   fillSel($("fHr"),80,220);fillSel($("fHrMax"),100,230,"--");
+  (function(){let o='<option value="">--</option>';for(let v=0;v<=500;v+=10)o+=`<option value="${v}">${v}</option>`;$("sMonthly").innerHTML=o;})();
   fillSel($("sAge"),15,90,"--");fillSel($("sRest"),30,100,"--");fillSel($("sMax"),140,230,"推定");fillSel($("sVo2"),25,85,"なし");
   $("fDk").innerHTML=Array.from({length:50},(_,i)=>`<option value="${i+1}">${i+1}</option>`).join("");
   $("fDd").innerHTML=Array.from({length:10},(_,i)=>`<option value="${i}">${i}</option>`).join("");
