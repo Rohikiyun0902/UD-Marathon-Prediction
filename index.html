@@ -369,6 +369,19 @@ button.danger-btn.armed{background:#C0392B;border-color:#C0392B;color:#fff}
 .racechk2 .check{flex:none;white-space:nowrap}
 
 .dlab{font-size:12px;font-weight:700;color:var(--ink);background:rgba(255,255,255,.1);border:1px solid var(--line);border-radius:4px;padding:0 5px;vertical-align:1px}
+
+/* アップデートのお知らせ(初回のみ) */
+.notice{position:fixed;inset:0;z-index:50;background:rgba(5,10,18,.72);display:flex;align-items:center;justify-content:center;padding:max(16px,env(safe-area-inset-top,0px)) 16px max(16px,env(safe-area-inset-bottom,0px))}
+.notice[hidden]{display:none}
+.notice-box{width:100%;max-width:420px;max-height:100%;overflow:auto;background:#1D4F3C;color:#F1F7F3;border:2px solid var(--title);border-radius:12px;padding:16px 16px 14px;box-shadow:0 10px 30px rgba(0,0,0,.5)}
+.notice-ttl{font-weight:700;font-size:17px;color:var(--title);border-bottom:1px solid rgba(242,140,40,.4);padding-bottom:6px;margin-bottom:8px}
+.notice-lead{margin:0 0 6px;font-size:14px}
+.notice-list{margin:0 0 8px;padding-left:1.3em;font-size:13.5px;line-height:1.6}
+.notice-list li{margin-bottom:6px}
+.notice-list b{color:#F2C230}
+.notice-foot{margin:0 0 12px;font-size:12px;color:#B9D3C6}
+.notice-btn{width:100%;padding:11px;font-weight:700;font-size:16px;border-radius:10px;background:linear-gradient(180deg,#FFE3EA,#F7A9BE);border:1px solid #E893AA;color:#6B2238;box-shadow:0 4px 0 #C9738C}
+.notice-btn:active{transform:translateY(3px);box-shadow:0 1px 0 #C9738C}
 </style>
 </head>
 <body>
@@ -576,7 +589,7 @@ button.danger-btn.armed{background:#C0392B;border-color:#C0392B;color:#fff}
         <li>ランの最大心拍を入れると、①基礎情報の最大心拍より高い値が記録された場合はそちらを最大心拍として使い、②平均と最大の差が25拍を超える日(変化走・坂など心拍が大きく振れた日)は信頼度を下げて扱います。</li>
         <li>心拍推定の個人補正:心拍から推定した実力(VDOT)が過去レースの実績より高い場合、その差を「心拍推定のクセ」とみなして一部を差し引きます(最新レースが新しいほど強く、最大12%)。全力で走った記録には適用しません。</li>
         <li>VO2max(時計などの値)は高めに出やすいため、練習記録が1〜2本のときは1割の重みで組み合わせ、3本以上たまったら使いません。練習記録がないときはVO2maxで試算します。</li>
-        <li>走り込み補正:平均月間走行距離が100km未満で+8%、100〜150kmで+5%、150〜200kmで+3%、200km以上で±0。直近6週間の最長距離による補正(最大4%)と合わせ、大きい方+小さい方の半分(上限10%)を上乗せします。</li>
+        <li>走り込み補正:平均月間走行距離に応じてなだらかに補正します(50kmで+7.5%、100kmで+4%、150kmで+1.5%、200kmで±0、250kmで-1.5%、300kmで-2.5%、最大-3%)。多く走っている人は基礎力・筋持久力があるとみなしてタイムを短縮します。直近6週間の最長距離が25km未満なら最大4%を上乗せします。さらに、直近8週間の15km以上の練習を「どれだけマラソンペースに近く走れたか」で長距離点(0〜100点)をつけ、30km以上をマラソンペースの1.05倍以内で走れていれば満点として、上乗せを最大6割減らし、最大2%短縮します。</li>
         <li>過去のフルマラソンレース結果は、大会当日の気温・湿度・天候(レース中の時間帯の平均)で好条件のタイムに換算してから、新しいレースほど重く平均した「過去レース」のタイムとして、計算結果と組み合わせます。直近1年以内のレースがあれば5割、それより古いだけなら3割(練習記録がないときは7割)の重みです。レースの最大心拍は、最大心拍の更新にも使います。</li>
         <li>過去レースはフル以外(ハーフ・10kmなど)も入力できます。フル以外はVDOTからフル相当タイムに換算し(走り込み補正の6割を上乗せ)、距離が短いほど重みを下げます。フルの結果がない場合は、過去レース全体の重みも7割に下げます。</li>
         <li>体重増減(直近レース比):直近の過去レースの時から体重が増えた・減った分を、過去レースのタイムに1kgあたり約0.9%で反映します(上限±8%)。</li>
@@ -586,6 +599,19 @@ button.danger-btn.armed{background:#C0392B;border-color:#C0392B;color:#fff}
       <p>あくまで目安です。心拍計の精度、体調、補給、30km以降の経験によって実際のタイムは前後します。最大心拍を実測値で入れると精度が上がります。</p>
     </details>
   </section>
+</div>
+
+<div class="notice" id="notice" role="dialog" aria-modal="true" aria-labelledby="noticeTtl" hidden>
+  <div class="notice-box">
+    <div class="notice-ttl" id="noticeTtl">アップデートのお知らせ</div>
+    <p class="notice-lead">予想タイムの計算に、次の2点を加えました。</p>
+    <ol class="notice-list">
+      <li><b>平均月間走行距離</b><br>多く走っている人ほど基礎力・筋持久力があるとみなし、予想タイムを短縮します(200kmで±0、300kmで約-2.5%)。</li>
+      <li><b>ペースと距離の関係</b><br>直近8週間の15km以上の練習を、マラソンペースに近く走れたかで評価します。30km以上をマラソンペース付近で走れていれば、予想タイムを短縮します。</li>
+    </ol>
+    <p class="notice-foot">詳しくは画面下の「試算の考え方」をご覧ください。</p>
+    <button type="button" class="notice-btn" id="noticeOk">OK</button>
+  </div>
 </div>
 
 <script>
@@ -640,6 +666,9 @@ button.danger-btn.armed{background:#C0392B;border-color:#C0392B;color:#fff}
     return a?{predMin:a.min,predVdot:a.vdot}:{predMin:null,predVdot:null};
   }
   // 過去レースの気象条件による補正(%):暑さ・湿度・天候。気象データが無ければ0
+  // 平均月間走行距離による補正(%):少ないほど上乗せ、多いほど基礎力・筋持久力があるとみなして短縮
+  function volPct(mo){if(mo==null)return 0;const P=[[0,10],[50,7.5],[100,4],[150,1.5],[200,0],[250,-1.5],[300,-2.5],[400,-3]];
+    if(mo>=400)return -3;for(let i=1;i<P.length;i++){if(mo<=P[i][0]){const [x0,y0]=P[i-1],[x1,y1]=P[i];return y0+(y1-y0)*(mo-x0)/(x1-x0);}}return -3;}
   const raceDist=rc=>rc.dist>0?rc.dist:42.195;
   function raceDistLabel(d){return Math.abs(d-42.195)<0.01?"フル":Math.abs(d-21.0975)<0.01?"ハーフ":`${(+d).toFixed(1)}km`;}
   function raceCond(rc){return rc.temp==null?0:heatPct(rc.temp,rc.hum)+wPct(rc.weather);}
@@ -648,8 +677,8 @@ button.danger-btn.armed{background:#C0392B;border-color:#C0392B;color:#fff}
     // (1) 過去レース:新しいレースほど重く(約10か月で重みが1/e)、気象条件を除いた好条件タイムで平均
     // フル以外(ハーフ・10kmなど)はVDOTからフル相当タイムに換算し、距離が短いほど重みを下げる
     const longestRun=Math.max(0,...runs.filter(r=>(now-new Date(r.date))/864e5<=42).map(r=>r.dist));
-    const mo0=s.monthly, vol0=(mo0==null)?0:(mo0<100?8:mo0<150?5:mo0<200?3:0);
-    const pen0=Math.min(10,Math.max(Math.max(0,(25-longestRun)/25)*4,vol0)+0.5*Math.min(Math.max(0,(25-longestRun)/25)*4,vol0));
+    const vol0=Math.max(0,volPct(s.monthly)), en0=Math.max(0,(25-longestRun)/25)*4;
+    const pen0=Math.min(10,Math.max(en0,vol0)+0.5*Math.min(en0,vol0));
     let past=null,latestDays=null,hasFull=false;
     {let sw2=0,st=0;for(const rc of (state.races||[])){if(!(rc.sec>0))continue;const dd=(now-new Date(rc.date))/864e5;if(dd<0)continue;
       const d=raceDist(rc), tIdeal=(rc.sec/60)/(1+raceCond(rc)/100), full=Math.abs(d-42.195)<0.01;
@@ -680,15 +709,24 @@ button.danger-btn.armed{background:#C0392B;border-color:#C0392B;color:#fff}
     // (5) 持久力の補正:直近6週間の最長距離と月間走行距離(大きい方+小さい方の半分、上限10%)
     const longest=Math.max(0,...runs.filter(r=>(now-new Date(r.date))/864e5<=42).map(r=>r.dist));
     const endur=Math.max(0,(25-longest)/25)*4;
-    const mo=s.monthly, vol=(mo==null)?0:(mo<100?8:mo<150?5:mo<200?3:0);
-    const pen=Math.min(10,Math.max(endur,vol)+0.5*Math.min(endur,vol));
+    const vol=volPct(s.monthly);
+    // ペースと距離:直近8週間の長い練習(15km以上)を、どれだけマラソンペースに近いペースで走れたかで評価
+    const mpPace=marathonMin(vdot)/42.195;   // 補正前のマラソンペース(分/km)
+    let longCredit=0;
+    for(const r of runs){const dd=(now-new Date(r.date))/864e5;if(dd<0||dd>56||!(r.dist>=15)||!(r.sec>0))continue;
+      const cond=heatPct(r.temp,r.hum)+wPct(r.weather)+(+r.course||0);
+      const pace=(r.sec/60)/r.dist/(1+cond/100), ratio=pace/mpPace;           // 1.0=マラソンペース
+      const sc=Math.min(1,r.dist/30)*Math.max(0,Math.min(1,(1.22-ratio)/0.17));  // 30km以上かつ1.05倍以内で満点
+      longCredit=Math.max(longCredit,sc);}
+    const base=vol>0?Math.max(endur,vol)+0.5*Math.min(endur,vol):endur+vol;
+    const pen=Math.max(-5,Math.min(10,base*(1-0.6*longCredit)-2*longCredit));
     const race=heatPct(s.raceTemp,s.raceHum)+wPct(s.raceWeather);
     let ideal=marathonMin(vdot)*(1+pen/100);
     // (6) 過去レースと組み合わせる:直近1年以内なら5割、それより古いだけなら3割、練習記録なしなら7割
     const wP=past?(!vRuns?0.7:(latestDays<=365?0.5:0.3))*(hasFull?1:0.7):0;
     if(past)ideal=ideal*(1-wP)+past*wP;
     const t=ideal*(1+race/100);
-    return {min:t,vdot,vRuns,vWatch,wW,n,longest,endur,vol,pen,past,wP,race,wAdj:past?wAdj:0,calPct:(1-cal)*100};
+    return {min:t,vdot,vRuns,vWatch,wW,n,longest,endur,vol,pen,longCredit,past,wP,race,wAdj:past?wAdj:0,calPct:(1-cal)*100};
   }
 
 
@@ -800,7 +838,7 @@ button.danger-btn.armed{background:#C0392B;border-color:#C0392B;color:#fff}
         agg.vRuns?`練習データ <b class="num">${agg.vRuns.toFixed(1)}</b>(${agg.n}本)`:`練習データ <b>なし</b>`,
         agg.vWatch?`VO2max <b class="num">${agg.vWatch}</b>${agg.vRuns?(agg.wW>0?`(${Math.round(agg.wW*100)}%)`:"(未使用)"):""}`:null].filter(Boolean);
       if(agg.calPct>0.05)meta.push(`心拍補正 <b>-${agg.calPct.toFixed(1)}%</b>`);
-      if(agg.pen>0.05)meta.push(`走り込み補正 <b>+${agg.pen.toFixed(1)}%</b>`);
+      if(Math.abs(agg.pen)>0.05)meta.push(`走り込み補正 <b>${agg.pen>0?"+":""}${agg.pen.toFixed(1)}%</b>${agg.longCredit>0.05?`(長距離 ${Math.round(agg.longCredit*100)}点)`:""}`);
       if(Math.abs(agg.wAdj)>0.05)meta.push(`体重補正 <b>${agg.wAdj>0?"+":""}${agg.wAdj.toFixed(1)}%</b>`);
       if(agg.past)meta.push(`過去レース <b class="num">${hms(agg.past*60)}</b>(${Math.round(agg.wP*100)}%)`);
       if(agg.race>0.05)meta.push(`当日条件 <b>+${agg.race.toFixed(1)}%</b>`);
@@ -1100,6 +1138,14 @@ button.danger-btn.armed{background:#C0392B;border-color:#C0392B;color:#fff}
     });})();
   // レース当日条件を初期値(びわ湖マラソン2026)に戻す
   $("raceReset").addEventListener("click",()=>{setSel($("raceTemp"),5);setSel($("raceHum"),66);$("raceWeather").value="cloudy";readSettings();save();render();});
+  // アップデートのお知らせ:この版で初めて開いたときだけ表示
+  const NOTICE_VER="2026-11-23";
+  (function(){const el=$("notice");if(state.settings.noticeSeen===NOTICE_VER)return;
+    el.hidden=false;setTimeout(()=>{try{$("noticeOk").focus();}catch(_){}},50);
+    const close=()=>{el.hidden=true;state.settings.noticeSeen=NOTICE_VER;save();};
+    $("noticeOk").addEventListener("click",close);
+    el.addEventListener("click",e=>{if(e.target===el)close();});
+    document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!el.hidden)close();});})();
   // init
   const today=new Date();$("fDate").value=`${today.getFullYear()}-${pad(today.getMonth()+1)}-${pad(today.getDate())}`;showDateWd();
   /* ---------- form defaults ---------- */
