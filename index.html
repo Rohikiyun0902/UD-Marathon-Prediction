@@ -396,6 +396,18 @@ button.danger-btn.armed{background:#C0392B;border-color:#C0392B;color:#fff}
 .runner-col{position:relative}
 .ver{position:absolute;right:0;top:calc(100% + 6px);font-size:10.5px;padding:0 5px;letter-spacing:.02em}
 .hero{margin-bottom:28px}
+
+/* 記録一覧:月ごとの折りたたみ */
+.mgrp{border-top:1px solid var(--line)}
+.mgrp:first-child{border-top:0}
+.mgrp>summary{display:flex;align-items:center;gap:8px;list-style:none;cursor:pointer;padding:8px 2px}
+.mgrp>summary::-webkit-details-marker{display:none}
+.mgrp>summary::before{content:"▶";font-size:10px;color:var(--title);transition:transform .15s}
+.mgrp[open]>summary::before{transform:rotate(90deg)}
+.mttl{font-weight:700;font-size:15px;color:var(--ink)}
+.msum{margin-left:auto;font-size:12.5px;color:var(--sub)}
+.msum .num{font-size:15px;color:#F2C230}
+.mgrp .runs{margin:0 0 4px}
 </style>
 </head>
 <body>
@@ -425,7 +437,7 @@ button.danger-btn.armed{background:#C0392B;border-color:#C0392B;color:#fff}
       <path d="M8 40 H30"/><path d="M4 55 H26"/><path d="M10 70 H30"/>
     </g>
 </svg>
-    </span><span class="ver">Ver2.11231513</span></span>
+    </span><span class="ver">Ver2.11231545</span></span>
   </header>
 
   <section>
@@ -503,7 +515,7 @@ button.danger-btn.armed{background:#C0392B;border-color:#C0392B;color:#fff}
   <section>
     <details class="backup" open>
       <summary class="sh" data-en="RUN LOG">記録一覧</summary>
-    <div class="panel"><ul class="runs" id="runs"></ul></div>
+    <div class="panel"><div id="runs" class="runs-wrap"></div></div>
     </details>
   </section>
 
@@ -880,8 +892,19 @@ button.danger-btn.armed{background:#C0392B;border-color:#C0392B;color:#fff}
     }
     // list
     const ul=$("runs");
-    if(!state.runs.length){ul.innerHTML='<li class="empty" style="display:block">まだ記録がありません。上のフォームから今日のランを追加してください。</li>';}
-    else ul.innerHTML=[...state.runs].sort((a,b)=>(b.date+(b.start||"").padStart(5,"0")).localeCompare(a.date+(a.start||"").padStart(5,"0"))).map(r=>{
+    if(!state.runs.length){ul.innerHTML='<div class="empty">まだ記録がありません。上のフォームから今日のランを追加してください。</div>';}
+    else {
+      const sorted=[...state.runs].sort((a,b)=>(b.date+(b.start||"").padStart(5,"0")).localeCompare(a.date+(a.start||"").padStart(5,"0")));
+      const groups=[];for(const r of sorted){const k=r.date.slice(0,7);let g=groups[groups.length-1];if(!g||g.k!==k){g={k,runs:[]};groups.push(g);}g.runs.push(r);}
+      const cur=todayStr().slice(0,7);
+      ul.innerHTML=groups.map(g=>{
+        const open=monthOpen.has(g.k)?monthOpen.get(g.k):g.k===cur;   // 当月は開く、それ以前は畳む(手で開閉した状態は保持)
+        const km=g.runs.reduce((a,r)=>a+(+r.dist||0),0);
+        return `<details class="mgrp" data-k="${g.k}"${open?" open":""}><summary><span class="mttl">${+g.k.slice(0,4)}年${+g.k.slice(5,7)}月</span><span class="msum"><span class="num">${g.runs.length}</span>本・月間 <span class="num">${km.toFixed(1)}</span>km</span></summary><ul class="runs">${g.runs.map(runItem).join("")}</ul></details>`;
+      }).join("");
+      ul.querySelectorAll(".mgrp").forEach(d=>d.addEventListener("toggle",()=>monthOpen.set(d.dataset.k,d.open)));
+    }
+    function runItem(r){
       const e=evalRun(r,s), w=WEATHER.find(x=>x[0]===r.weather);
       const cond=[r.temp!=null?`${r.temp}℃`:null,r.hum!=null?`湿度${r.hum}%`:null,w?w[1]:null,r.course?(r.course>2?"坂多め":"起伏あり"):null,r.hr?`心拍${r.hr}${r.hrMax?`/最大${r.hrMax}`:""}`:null,r.race?"全力走":null].filter(Boolean).join("、");
       return `<li class="${e.vdot||r.predMin?"":"bad"}">
@@ -889,7 +912,7 @@ button.danger-btn.armed{background:#C0392B;border-color:#C0392B;color:#fff}
         <div class="cond">${esc(cond)}${e.cond>0.05?` 条件補正 +${e.cond.toFixed(1)}%`:""}</div></div>
         <div class="pred">${r.predMin?`<span class="num">${hms(r.predMin*60)}</span><small>VDOT ${(r.predVdot||0).toFixed(1)}</small>`:e.vdot?`<span class="num">${hms(marathonMin(e.vdot)*60)}</span><small>VDOT ${e.vdot.toFixed(1)}</small>`:`<span class="num">—</span><small>${esc(e.why)}</small>`}</div>
         <button class="del" data-id="${r.id}" aria-label="${esc(r.date)}の記録を削除">削除</button></li>`;
-    }).join("");
+    }
     ul.querySelectorAll(".del").forEach(b=>b.addEventListener("click",()=>{
       if(b.dataset.armed!=="1"){                       // 1回目:確認状態にする(ダイアログを使わない)
         b.dataset.armed="1";b.textContent="もう一度押すと削除";b.classList.add("armed");
@@ -914,6 +937,7 @@ button.danger-btn.armed{background:#C0392B;border-color:#C0392B;color:#fff}
     else if(r.lat!=null)parts.push(r._wxTried?"気象データなし":"気象データ取得中");
     return parts.join("、");
   }
+  const monthOpen=new Map();
   function renderRaces(){
     const ul=$("races"); if(!ul)return;
     const rs=[...(state.races||[])].sort((a,b)=>b.date.localeCompare(a.date));
